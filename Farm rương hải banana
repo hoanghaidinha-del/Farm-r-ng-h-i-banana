@@ -1,60 +1,50 @@
 --[[
     👑 AUTHOR: HẢI8A
-    🍌 BANANA HUB MOBILE (FULL SUPPORT)
-    📱 HỖ TRỢ: ANDROID / IOS / EMULATOR
+    🍌 BANANA HUB (ẨN/HIỆN KHÔNG DỪNG FARM)
 ]]
 
--- Xóa UI cũ để tránh lỗi
 if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
 
+-- ================= BIẾN TOÀN CỤC =================
 getgenv().AutoFarm = false
 getgenv().AntiAFK = true
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
 
--- ================= LOGIC NHẶT RƯƠNG CHO MOBILE =================
+-- ================= LOGIC FARM (CHẠY ĐỘC LẬP) =================
 local function getRoot()
     return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 end
 
 task.spawn(function()
-    while task.wait(0.2) do -- Delay 0.2 để tránh lag điện thoại
+    while task.wait(0.1) do
         if getgenv().AutoFarm then
             local root = getRoot()
             if root then
-                for _, obj in pairs(workspace:GetDescendants()) do
+                for _, v in pairs(workspace:GetDescendants()) do
                     if not getgenv().AutoFarm then break end
                     
-                    local name = obj.Name:lower()
-                    if name:find("chest") or name:find("rương") or name:find("treasure") then
-                        local target = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart", true)
+                    local name = v.Name:lower()
+                    if name:find("chest") or name:find("rương") or name:find("treasure") or name:find("box") then
+                        local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
                         
                         if target and target.Parent then
-                            -- TELEPORT (Sử dụng CFrame để không bị kẹt Mobi)
                             root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-                            
                             pcall(function()
-                                -- Giả lập chạm
                                 firetouchinterest(root, target, 0)
                                 firetouchinterest(root, target, 1)
-                                
-                                -- Tự kích hoạt nút nhặt (Cho Mobi)
-                                for _, p in pairs(obj:GetDescendants()) do
-                                    if p:IsA("ProximityPrompt") then
-                                        -- Mobi cần kích hoạt liên tục để tránh delay
-                                        task.spawn(function()
-                                            fireproximityprompt(p)
-                                        end)
-                                    end
+                                for _, p in pairs(v:GetDescendants()) do
+                                    if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
                                 end
+                                local cd = v:FindFirstChildWhichIsA("ClickDetector", true)
+                                if cd then fireclickdetector(cd) end
                             end)
-                            task.wait(0.4) -- Mobi cần nghỉ lâu hơn PC một chút để render
+                            task.wait(0.3)
                         end
                     end
                 end
@@ -63,74 +53,84 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN TỐI ƯU MOBILE =================
+-- ================= GIAO DIỆN CHÍNH =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
+Gui.ResetOnSpawn = false
 
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 380, 0, 280) -- Kích thước vừa vặn màn hình điện thoại
-Main.Position = UDim2.new(0.5, -190, 0.5, -140)
+Main.Size = UDim2.new(0, 400, 0, 250)
+Main.Position = UDim2.new(0.5, -200, 0.5, -125)
 Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
 Main.BorderSizePixel = 0
-Main.Active = true -- Quan trọng cho Mobi
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+Main.Active = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 15)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(255,215,0)
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1,0,0,50)
-Title.Text = "HẢI8A HUB - MOBILE 🍌"
+Title.Text = "HẢI8A HUB 🍌 - MOBILE"
 Title.TextColor3 = Color3.fromRGB(255,215,0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+Title.TextSize = 20
 Title.BackgroundTransparency = 1
 
-local List = Instance.new("UIListLayout", Main)
-List.HorizontalAlignment = Enum.HorizontalAlignment.Center
-List.Padding = UDim.new(0, 10)
-Instance.new("UIPadding", Main).PaddingTop = UDim.new(0, 60)
+local FarmBtn = Instance.new("TextButton", Main)
+FarmBtn.Size = UDim2.new(0.8,0,0,50)
+FarmBtn.Position = UDim2.new(0.1,0,0.45,0)
+FarmBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+FarmBtn.Text = "AUTO FARM: TẮT"
+FarmBtn.TextColor3 = Color3.new(1,1,1)
+FarmBtn.Font = Enum.Font.GothamBold
+FarmBtn.TextSize = 16
+Instance.new("UICorner", FarmBtn)
 
--- Hàm tạo Toggle dễ bấm cho cảm ứng
-local function AddToggle(text, default, callback)
-    local Frame = Instance.new("Frame", Main)
-    Frame.Size = UDim2.new(0.9, 0, 0, 45)
-    Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Instance.new("UICorner", Frame)
+FarmBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoFarm = not getgenv().AutoFarm
+    FarmBtn.Text = getgenv().AutoFarm and "AUTO FARM: ĐANG CHẠY" or "AUTO FARM: TẮT"
+    FarmBtn.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30,30,30)
+end)
 
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(0.6, 0, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.Text = text
-    Label.TextColor3 = Color3.new(1, 1, 1)
-    Label.Font = Enum.Font.GothamBold
-    Label.TextSize = 13
-    Label.BackgroundTransparency = 1
-    Label.TextXAlignment = Enum.TextXAlignment.Left
+-- ================= NÚT TRÒN BẬT/TẮT (KHÔNG DỪNG FARM) =================
+local ToggleIcon = Instance.new("TextButton", Gui)
+ToggleIcon.Size = UDim2.new(0, 50, 0, 50)
+ToggleIcon.Position = UDim2.new(0.05, 0, 0.15, 0)
+ToggleIcon.Text = "🍌"
+ToggleIcon.TextSize = 30
+ToggleIcon.BackgroundColor3 = Color3.fromRGB(255,215,0)
+ToggleIcon.BorderSizePixel = 0
+ToggleIcon.ZIndex = 10
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1,0)
+local StrokeIcon = Instance.new("UIStroke", ToggleIcon)
+StrokeIcon.Thickness = 2
+StrokeIcon.Color = Color3.new(0,0,0)
 
-    local Btn = Instance.new("TextButton", Frame)
-    Btn.Size = UDim2.new(0, 45, 0, 22)
-    Btn.Position = UDim2.new(1, -55, 0.5, -11)
-    Btn.Text = ""
-    Btn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
+-- Click để ẩn hiện
+ToggleIcon.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+end)
 
-    local Circle = Instance.new("Frame", Btn)
-    Circle.Size = UDim2.new(0, 18, 0, 18)
-    Circle.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
-    Circle.BackgroundColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
+-- Kéo thả nút tròn (Dành riêng cho Mobi)
+local dragIconStart, startIconPos
+ToggleIcon.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragIconStart = input.Position
+        startIconPos = ToggleIcon.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragIconStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragIconStart
+        ToggleIcon.Position = UDim2.new(startIconPos.X.Scale, startIconPos.X.Offset + delta.X, startIconPos.Y.Scale, startIconPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragIconStart = nil
+    end
+end)
 
-    Btn.MouseButton1Click:Connect(function()
-        local state = not (Btn.BackgroundColor3 == Color3.fromRGB(0, 200, 0))
-        callback(state)
-        TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)}):Play()
-        TweenService:Create(Circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)}):Play()
-    end)
-end
-
-AddToggle("Tự Động Farm Rương", false, function(v) getgenv().AutoFarm = v end)
-AddToggle("Chống Kick AFK", true, function(v) getgenv().AntiAFK = v end)
-
--- ================= HỖ TRỢ KÉO THẢ TRÊN CẢM ỨNG =================
+-- ================= KÉO THẢ MENU CHÍNH =================
 local dragStart, startPos
 Main.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -150,23 +150,9 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ================= NÚT TRÒN BANANA =================
-local ToggleIcon = Instance.new("TextButton", Gui)
-ToggleIcon.Size = UDim2.new(0, 50, 0, 50)
-ToggleIcon.Position = UDim2.new(0.05, 0, 0.2, 0) -- Đưa lên trên để không vướng nút di chuyển Mobi
-ToggleIcon.Text = "🍌"
-ToggleIcon.TextSize = 25
-ToggleIcon.BackgroundColor3 = Color3.fromRGB(255,215,0)
-Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1,0)
-Instance.new("UIStroke", ToggleIcon).Thickness = 2
-
-ToggleIcon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
-
--- Anti AFK cho Mobile
-Player.Idled:Connect(function()
-    if getgenv().AntiAFK then
-        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        task.wait(0.5)
-        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    end
+-- Anti AFK
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
 end)
