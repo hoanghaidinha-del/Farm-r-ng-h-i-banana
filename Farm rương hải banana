@@ -1,6 +1,6 @@
 --[[
-    BANANA CHEST HUB v3 (TOTAL FIX)
-    Features: Auto Farm Chest (Sea 1, 2, 3), Server Hop, Anti-Admin, Floating Button
+    HAI BANANA CHEST HUB 🍌
+    Tổng hợp: Auto Farm Chest, Server Hop, Anti-Admin, Floating Button
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -18,17 +18,20 @@ local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local ToggleBtn = Instance.new("ImageButton", ScreenGui)
 local Corner = Instance.new("UICorner", ToggleBtn)
 
-ToggleBtn.Name = "BananaButton"
+ToggleBtn.Name = "HaiBananaButton"
 ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
 ToggleBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
-ToggleBtn.Image = "rbxassetid://6031289435" -- Hình tròn
+ToggleBtn.Image = "rbxassetid://6031289435" -- Hình tròn vàng
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-ToggleBtn.Draggable = true
+ToggleBtn.Draggable = true -- Có thể kéo nút đi chỗ khác
 Corner.CornerRadius = UDim.new(1, 0)
 
+-- Chức năng bật/tắt hiển thị Menu khi bấm vào nút tròn
 ToggleBtn.MouseButton1Click:Connect(function()
     local MainFrame = game:GetService("CoreGui").RayfieldGui.Main
-    MainFrame.Visible = not MainFrame.Visible
+    if MainFrame then
+        MainFrame.Visible = not MainFrame.Visible
+    end
 end)
 
 -- === HÀM SERVER HOP ===
@@ -57,18 +60,18 @@ local function flyTo(targetCFrame)
     tween.Completed:Wait()
 end
 
--- === KHỞI TẠO MENU ===
+-- === KHỞI TẠO MENU VỚI TÊN MỚI ===
 local Window = Rayfield:CreateWindow({
-   Name = "BANANA CHEST HUB 🍌",
-   LoadingTitle = "Đang khởi chạy...",
-   LoadingSubtitle = "Fix Bug & Anti-Admin Active",
+   Name = "HAI BANANA CHEST 🍌",
+   LoadingTitle = "Đang khởi chạy hệ thống...",
+   LoadingSubtitle = "by Gemini AI - Fixed & Safe",
    ConfigurationSaving = { Enabled = false }
 })
 
 local MainTab = Window:CreateTab("Tự động", 4483362458)
 
 MainTab:CreateToggle({
-   Name = "Auto Farm Rương (Sea 1, 2, 3)",
+   Name = "Auto Farm Rương (All Sea)",
    CurrentValue = false,
    Callback = function(Value)
       _G_AutoChest = Value
@@ -80,12 +83,13 @@ MainTab:CreateToggle({
                       if not _G_AutoChest then break end
                       if v:IsA("TouchTransmitter") and v.Parent.Name:find("Chest") then
                           hasChest = true
+                          -- Bay đến phía trên rương 3 đơn vị để tránh kẹt sàn
                           flyTo(v.Parent.CFrame * CFrame.new(0, 3, 0))
                           task.wait(0.2)
                       end
                   end
                   if not hasChest then
-                      Rayfield:Notify({Title = "Hết rương", Content = "Đang đổi server để farm tiếp...", Duration = 3})
+                      Rayfield:Notify({Title = "Thông báo", Content = "Hết rương! Đang tự nhảy server...", Duration = 3})
                       serverHop()
                       break
                   end
@@ -97,34 +101,34 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateButton({
-   Name = "Chuyển Server ngay",
+   Name = "Nhảy Server Ngay",
    Callback = function() serverHop() end,
 })
 
 local ConfigTab = Window:CreateTab("Cài đặt", 4483362458)
 
 ConfigTab:CreateSlider({
-   Name = "Tốc độ bay",
+   Name = "Tốc độ di chuyển",
    Range = {100, 350},
    Increment = 10,
    CurrentValue = 200,
    Callback = function(Value) _G_Speed = Value end,
 })
 
--- === HỆ THỐNG BẢO VỆ (CHẠY NGẦM) ===
+-- === HỆ THỐNG BẢO VỆ CHẠY NGẦM ===
 spawn(function()
     while task.wait(3) do
-        -- 1. Anti-Admin
+        -- 1. Anti-Admin: Tự thoát nếu thấy Admin/Mod
         for _, p in pairs(game.Players:GetPlayers()) do
             if p:GetRankInGroup(2830050) >= 250 or p.Name:find("Admin") or p.Name:find("Mod") then
                 serverHop()
             end
         end
-        -- 2. Anti-AFK
+        -- 2. Anti-AFK: Chống bị văng game khi treo máy
         local VU = game:GetService("VirtualUser")
         VU:CaptureController()
         VU:ClickButton2(Vector2.new())
     end
 end)
 
-Rayfield:Notify({Title = "Sẵn sàng!", Content = "Dùng nút tròn màu vàng để ẩn/hiện bảng điều khiển.", Duration = 5})
+Rayfield:Notify({Title = "HAI BANANA", Content = "Script đã sẵn sàng! Bấm nút tròn vàng để đóng/mở menu.", Duration = 5})
