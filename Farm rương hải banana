@@ -1,22 +1,68 @@
--- 👑 AUTHOR: HẢI8A
--- 🍌 BANANA HUB (NO KEY VERSION)
+--[[
+    👑 AUTHOR: HẢI8A
+    🍌 BANANA HUB (NO KEY VERSION)
+    🛠️ STATUS: FIXED ALL LOGIC & OPTIMIZED
+]]
 
--- Xóa UI cũ nếu có
+-- Xóa UI cũ để tránh bị đè
 if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
 
--- ================= BIẾN =================
+-- ================= CẤU HÌNH BIẾN =================
 getgenv().AutoFarm = false
 getgenv().AntiAFK = true
 
--- ================= SERVICES =================
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= GUI =================
+-- ================= HÀM HỖ TRỢ FARM =================
+local function getRoot()
+    return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Vòng lặp Farm chạy ngầm (Fixed: Không gây lag UI)
+task.spawn(function()
+    while task.wait(0.1) do
+        if getgenv().AutoFarm then
+            local root = getRoot()
+            if root then
+                -- Tìm kiếm mục tiêu hiệu quả hơn
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if not getgenv().AutoFarm then break end
+                    
+                    -- Kiểm tra tên rương (Chest)
+                    if obj:IsA("Model") and (string.find(obj.Name:lower(), "chest") or string.find(obj.Name:lower(), "rương")) then
+                        local part = obj:FindFirstChildWhichIsA("BasePart") or obj:FindFirstChild("HumanoidRootPart")
+                        
+                        if part then
+                            -- Teleport thẳng tới rương
+                            root.CFrame = part.CFrame + Vector3.new(0, 2, 0)
+                            
+                            -- Kích hoạt nhặt đồ
+                            pcall(function()
+                                firetouchinterest(root, part, 0)
+                                firetouchinterest(root, part, 1)
+                                
+                                -- Quét thêm ProximityPrompt nếu có
+                                for _, p in pairs(obj:GetDescendants()) do
+                                    if p:IsA("ProximityPrompt") then
+                                        fireproximityprompt(p)
+                                    end
+                                end
+                            end)
+                            task.wait(0.2) -- Delay nhỏ để server nhận diện
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ================= GIAO DIỆN (GIỮ NGUYÊN STYLE BẠN THÍCH) =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
 Gui.ResetOnSpawn = false
@@ -27,9 +73,11 @@ Main.Position = UDim2.new(0.5, -250, 0.5, -175)
 Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
 Main.BorderSizePixel = 0
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0,10)
-Instance.new("UIStroke", Main).Color = Color3.fromRGB(255,215,0)
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(255,215,0)
+Stroke.Thickness = 2
 
--- Sidebar
+-- Sidebar & Title
 local SideBar = Instance.new("Frame", Main)
 SideBar.Size = UDim2.new(0,150,1,0)
 SideBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
@@ -43,19 +91,21 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
 Title.BackgroundTransparency = 1
 
--- Content
-local Content = Instance.new("Frame", Main)
+-- Content Area
+local Content = Instance.new("ScrollingFrame", Main)
 Content.Size = UDim2.new(1,-160,1,-20)
 Content.Position = UDim2.new(0,155,0,10)
 Content.BackgroundTransparency = 1
+Content.CanvasSize = UDim2.new(0,0,0,500)
+Content.ScrollBarThickness = 2
 
 local Layout = Instance.new("UIListLayout", Content)
 Layout.Padding = UDim.new(0,10)
 
--- ===== Toggle AutoFarm (chỉ đổi trạng thái biến) =====
+-- ===== Hàm Tạo Toggle Chuẩn Banana =====
 local function AddToggle(text, default, callback)
     local Frame = Instance.new("Frame", Content)
-    Frame.Size = UDim2.new(1,-10,0,40)
+    Frame.Size = UDim2.new(1,-10,0,45)
     Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
     Instance.new("UICorner", Frame)
 
@@ -64,19 +114,21 @@ local function AddToggle(text, default, callback)
     Label.Position = UDim2.new(0,10,0,0)
     Label.Text = text
     Label.TextColor3 = Color3.new(1,1,1)
+    Label.Font = Enum.Font.GothamSemibold
+    Label.TextSize = 14
     Label.BackgroundTransparency = 1
     Label.TextXAlignment = Enum.TextXAlignment.Left
 
     local Btn = Instance.new("TextButton", Frame)
-    Btn.Size = UDim2.new(0,50,0,24)
-    Btn.Position = UDim2.new(1,-60,0.5,-12)
+    Btn.Size = UDim2.new(0,50,0,26)
+    Btn.Position = UDim2.new(1,-60,0.5,-13)
     Btn.Text = ""
     Btn.BackgroundColor3 = default and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
 
     local Circle = Instance.new("Frame", Btn)
-    Circle.Size = UDim2.new(0,20,0,20)
-    Circle.Position = default and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
+    Circle.Size = UDim2.new(0,22,0,22)
+    Circle.Position = default and UDim2.new(1,-24,0.5,-11) or UDim2.new(0,2,0.5,-11)
     Circle.BackgroundColor3 = Color3.new(1,1,1)
     Instance.new("UICorner", Circle).CornerRadius = UDim.new(1,0)
 
@@ -84,20 +136,17 @@ local function AddToggle(text, default, callback)
     Btn.MouseButton1Click:Connect(function()
         toggled = not toggled
         callback(toggled)
-        TweenService:Create(Btn, TweenInfo.new(0.3), {
-            BackgroundColor3 = toggled and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
-        }):Play()
-        TweenService:Create(Circle, TweenInfo.new(0.3), {
-            Position = toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
-        }):Play()
+        TweenService:Create(Btn, TweenInfo.new(0.3), {BackgroundColor3 = toggled and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)}):Play()
+        TweenService:Create(Circle, TweenInfo.new(0.3), {Position = toggled and UDim2.new(1,-24,0.5,-11) or UDim2.new(0,2,0.5,-11)}):Play()
     end)
 end
 
-AddToggle("Auto Farm (Biến Trạng Thái)", false, function(v)
+-- ===== Thêm Chức Năng =====
+AddToggle("Auto Farm Rương", false, function(v)
     getgenv().AutoFarm = v
 end)
 
-AddToggle("Anti AFK", true, function(v)
+AddToggle("Chế Độ Treo Máy (Anti AFK)", true, function(v)
     getgenv().AntiAFK = v
 end)
 
@@ -109,27 +158,27 @@ Player.Idled:Connect(function()
     end
 end)
 
--- ===== Drag UI =====
-local dragStart, startPos
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragStart = input.Position
-        startPos = Main.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragStart = nil end
-        end)
-    end
-end)
+-- ===== Kéo Thả & Ẩn Hiện =====
+local function Dragging()
+    local dragStart, startPos
+    Main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragStart = input.Position
+            startPos = Main.Position
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragStart then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragStart = nil end
+    end)
+end
+Dragging()
 
-Main.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragStart then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                                  startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- ===== Nút Tròn Bật/Tắt Menu =====
 local ToggleIcon = Instance.new("TextButton", Gui)
 ToggleIcon.Size = UDim2.new(0,50,0,50)
 ToggleIcon.Position = UDim2.new(0,10,0.5,-25)
@@ -137,7 +186,4 @@ ToggleIcon.Text = "🍌"
 ToggleIcon.TextSize = 30
 ToggleIcon.BackgroundColor3 = Color3.fromRGB(255,215,0)
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1,0)
-
-ToggleIcon.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
+ToggleIcon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
