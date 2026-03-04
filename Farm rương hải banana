@@ -55,8 +55,6 @@ end
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
 
 -- ================= VARIABLES =================
 local AutoFarm = false
@@ -66,7 +64,7 @@ local function getRoot()
     return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- ================= TELEPORT =================
+-- ================= TELEPORT MƯỢT =================
 local function smoothTeleport(cf)
     local root = getRoot()
     if not root then return end
@@ -83,33 +81,57 @@ local function smoothTeleport(cf)
     tween.Completed:Wait()
 end
 
-local function touchChest(part)
-    local root = getRoot()
-    if not root then return end
-    firetouchinterest(root,part,0)
-    task.wait()
-    firetouchinterest(root,part,1)
+-- ================= AUTO NHẬN DIỆN RƯƠNG =================
+local function isChestModel(model)
+    if not model then return false end
+    if model:FindFirstChildWhichIsA("TouchTransmitter", true) then return true end
+    if model:FindFirstChildWhichIsA("ProximityPrompt", true) then return true end
+    if model:FindFirstChildWhichIsA("ClickDetector", true) then return true end
+    return false
 end
 
 local function getNearestChest()
     local root = getRoot()
     if not root then return end
 
-    local nearest, dist = nil, math.huge
+    local nearest
+    local shortest = math.huge
 
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("TouchTransmitter") and v.Parent and string.find(v.Parent.Name,"Chest") then
-            local part = v.Parent:FindFirstChildWhichIsA("BasePart")
+    for _,obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and isChestModel(obj) then
+            local part = obj:FindFirstChildWhichIsA("BasePart")
             if part then
-                local d = (root.Position - part.Position).Magnitude
-                if d < dist then
-                    dist = d
+                local dist = (root.Position - part.Position).Magnitude
+                if dist < shortest then
+                    shortest = dist
                     nearest = part
                 end
             end
         end
     end
+
     return nearest
+end
+
+local function collectChest(part)
+    local root = getRoot()
+    if not root then return end
+
+    root.CFrame = part.CFrame + Vector3.new(0,3,0)
+
+    pcall(function()
+        firetouchinterest(root, part, 0)
+        firetouchinterest(root, part, 1)
+    end)
+
+    for _,v in pairs(part.Parent:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            fireproximityprompt(v)
+        end
+        if v:IsA("ClickDetector") then
+            fireclickdetector(v)
+        end
+    end
 end
 
 local function farmLoop()
@@ -118,24 +140,15 @@ local function farmLoop()
         if chest then
             smoothTeleport(chest.CFrame)
             task.wait(0.05)
-            touchChest(chest)
+            collectChest(chest)
         else
-            -- Server Hop khi hết rương
-            local API = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?limit=100"
-            local data = HttpService:JSONDecode(game:HttpGet(API))
-            for _,v in pairs(data.data) do
-                if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId,v.id,Player)
-                    break
-                end
-            end
-            break
+            task.wait(1)
         end
-        task.wait(0.2)
+        task.wait(0.1)
     end
 end
 
--- ================= UI GIỮ NGUYÊN =================
+-- ================= UI =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.ResetOnSpawn = false
 
@@ -156,7 +169,6 @@ Title.Text = "🍌 FARM RƯƠNG PRO MAX"
 Title.TextColor3 = Color3.fromRGB(20,20,20)
 Title.TextScaled = true
 
--- Toggle Auto
 local FarmBtn = Instance.new("TextButton", Main)
 FarmBtn.Size = UDim2.new(0.8,0,0,40)
 FarmBtn.Position = UDim2.new(0.1,0,0.2,0)
@@ -174,7 +186,6 @@ FarmBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Label Speed
 local SpeedLabel = Instance.new("TextLabel", Main)
 SpeedLabel.Size = UDim2.new(0.8,0,0,30)
 SpeedLabel.Position = UDim2.new(0.1,0,0.6,0)
@@ -183,7 +194,6 @@ SpeedLabel.Text = "Farm Speed: "..FarmSpeed
 SpeedLabel.TextColor3 = Color3.new(1,1,1)
 SpeedLabel.TextScaled = true
 
--- + Speed
 local SpeedUp = Instance.new("TextButton", Main)
 SpeedUp.Size = UDim2.new(0.35,0,0,35)
 SpeedUp.Position = UDim2.new(0.1,0,0.7,0)
@@ -197,7 +207,6 @@ SpeedUp.MouseButton1Click:Connect(function()
     SpeedLabel.Text = "Farm Speed: "..FarmSpeed
 end)
 
--- - Speed
 local SpeedDown = Instance.new("TextButton", Main)
 SpeedDown.Size = UDim2.new(0.35,0,0,35)
 SpeedDown.Position = UDim2.new(0.55,0,0.7,0)
