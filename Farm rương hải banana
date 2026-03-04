@@ -54,98 +54,61 @@ end
 -- ================= SERVICES =================
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-
--- ================= VARIABLES =================
-local AutoFarm = false
-local FarmSpeed = 300
 
 local function getRoot()
     return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- ================= TELEPORT MƯỢT =================
-local function smoothTeleport(cf)
-    local root = getRoot()
-    if not root then return end
+-- ================= BIẾN =================
+local AutoFarm = false
+local Farming = false
 
-    local dist = (root.Position - cf.Position).Magnitude
-    local time = math.clamp(dist / FarmSpeed, 0.03, 0.3)
+-- ================= FARM (KHÔNG BAY - TELE THẲNG) =================
+local function farmLoop()
+    if Farming then return end
+    Farming = true
 
-    local tween = TweenService:Create(
-        root,
-        TweenInfo.new(time, Enum.EasingStyle.Linear),
-        {CFrame = cf * CFrame.new(0,3,0)}
-    )
-    tween:Play()
-    tween.Completed:Wait()
-end
+    while AutoFarm do
+        local root = getRoot()
+        if not root then break end
 
--- ================= AUTO NHẬN DIỆN RƯƠNG =================
-local function isChestModel(model)
-    if not model then return false end
-    if model:FindFirstChildWhichIsA("TouchTransmitter", true) then return true end
-    if model:FindFirstChildWhichIsA("ProximityPrompt", true) then return true end
-    if model:FindFirstChildWhichIsA("ClickDetector", true) then return true end
-    return false
-end
+        for _,obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") then
+                local part = obj:FindFirstChildWhichIsA("BasePart")
 
-local function getNearestChest()
-    local root = getRoot()
-    if not root then return end
+                if part then
+                    local hasTouch = obj:FindFirstChildWhichIsA("TouchTransmitter", true)
+                    local hasPrompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    local hasClick = obj:FindFirstChildWhichIsA("ClickDetector", true)
 
-    local nearest
-    local shortest = math.huge
+                    if hasTouch or hasPrompt or hasClick then
+                        
+                        -- TELE THẲNG
+                        root.CFrame = part.CFrame + Vector3.new(0,3,0)
 
-    for _,obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and isChestModel(obj) then
-            local part = obj:FindFirstChildWhichIsA("BasePart")
-            if part then
-                local dist = (root.Position - part.Position).Magnitude
-                if dist < shortest then
-                    shortest = dist
-                    nearest = part
+                        -- NHẶT NGAY
+                        pcall(function()
+                            firetouchinterest(root, part, 0)
+                            firetouchinterest(root, part, 1)
+                        end)
+
+                        for _,v in pairs(obj:GetDescendants()) do
+                            if v:IsA("ProximityPrompt") then
+                                fireproximityprompt(v)
+                            end
+                            if v:IsA("ClickDetector") then
+                                fireclickdetector(v)
+                            end
+                        end
+                    end
                 end
             end
         end
-    end
 
-    return nearest
-end
-
-local function collectChest(part)
-    local root = getRoot()
-    if not root then return end
-
-    root.CFrame = part.CFrame + Vector3.new(0,3,0)
-
-    pcall(function()
-        firetouchinterest(root, part, 0)
-        firetouchinterest(root, part, 1)
-    end)
-
-    for _,v in pairs(part.Parent:GetDescendants()) do
-        if v:IsA("ProximityPrompt") then
-            fireproximityprompt(v)
-        end
-        if v:IsA("ClickDetector") then
-            fireclickdetector(v)
-        end
-    end
-end
-
-local function farmLoop()
-    while AutoFarm do
-        local chest = getNearestChest()
-        if chest then
-            smoothTeleport(chest.CFrame)
-            task.wait(0.05)
-            collectChest(chest)
-        else
-            task.wait(1)
-        end
         task.wait(0.1)
     end
+
+    Farming = false
 end
 
 -- ================= UI =================
@@ -153,8 +116,8 @@ local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.ResetOnSpawn = false
 
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0,400,0,350)
-Main.Position = UDim2.new(0.5,-200,0.5,-175)
+Main.Size = UDim2.new(0,400,0,250)
+Main.Position = UDim2.new(0.5,-200,0.5,-125)
 Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 Instance.new("UICorner", Main)
 
@@ -169,9 +132,10 @@ Title.Text = "🍌 FARM RƯƠNG PRO MAX"
 Title.TextColor3 = Color3.fromRGB(20,20,20)
 Title.TextScaled = true
 
+-- Auto Farm Toggle
 local FarmBtn = Instance.new("TextButton", Main)
-FarmBtn.Size = UDim2.new(0.8,0,0,40)
-FarmBtn.Position = UDim2.new(0.1,0,0.2,0)
+FarmBtn.Size = UDim2.new(0.8,0,0,50)
+FarmBtn.Position = UDim2.new(0.1,0,0.4,0)
 FarmBtn.Text = "Auto Farm: OFF"
 FarmBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
 FarmBtn.TextColor3 = Color3.new(1,1,1)
@@ -181,46 +145,28 @@ Instance.new("UICorner", FarmBtn)
 FarmBtn.MouseButton1Click:Connect(function()
     AutoFarm = not AutoFarm
     FarmBtn.Text = "Auto Farm: "..(AutoFarm and "ON" or "OFF")
+
     if AutoFarm then
         spawn(farmLoop)
     end
 end)
 
-local SpeedLabel = Instance.new("TextLabel", Main)
-SpeedLabel.Size = UDim2.new(0.8,0,0,30)
-SpeedLabel.Position = UDim2.new(0.1,0,0.6,0)
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Text = "Farm Speed: "..FarmSpeed
-SpeedLabel.TextColor3 = Color3.new(1,1,1)
-SpeedLabel.TextScaled = true
+-- ================= NÚT ẨN / HIỆN MENU =================
+local ToggleMenu = Instance.new("TextButton", Gui)
+ToggleMenu.Size = UDim2.new(0,120,0,40)
+ToggleMenu.Position = UDim2.new(0.02,0,0.5,0)
+ToggleMenu.Text = "Ẩn Menu"
+ToggleMenu.BackgroundColor3 = Color3.fromRGB(255,215,0)
+ToggleMenu.TextColor3 = Color3.fromRGB(20,20,20)
+ToggleMenu.TextScaled = true
+Instance.new("UICorner", ToggleMenu)
 
-local SpeedUp = Instance.new("TextButton", Main)
-SpeedUp.Size = UDim2.new(0.35,0,0,35)
-SpeedUp.Position = UDim2.new(0.1,0,0.7,0)
-SpeedUp.Text = "+ Speed"
-SpeedUp.BackgroundColor3 = Color3.fromRGB(0,170,0)
-SpeedUp.TextScaled = true
-Instance.new("UICorner", SpeedUp)
-
-SpeedUp.MouseButton1Click:Connect(function()
-    FarmSpeed = math.clamp(FarmSpeed + 100,100,2000)
-    SpeedLabel.Text = "Farm Speed: "..FarmSpeed
+ToggleMenu.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+    ToggleMenu.Text = Main.Visible and "Ẩn Menu" or "Hiện Menu"
 end)
 
-local SpeedDown = Instance.new("TextButton", Main)
-SpeedDown.Size = UDim2.new(0.35,0,0,35)
-SpeedDown.Position = UDim2.new(0.55,0,0.7,0)
-SpeedDown.Text = "- Speed"
-SpeedDown.BackgroundColor3 = Color3.fromRGB(170,0,0)
-SpeedDown.TextScaled = true
-Instance.new("UICorner", SpeedDown)
-
-SpeedDown.MouseButton1Click:Connect(function()
-    FarmSpeed = math.clamp(FarmSpeed - 100,100,2000)
-    SpeedLabel.Text = "Farm Speed: "..FarmSpeed
-end)
-
--- Anti AFK
+-- ================= ANTI AFK =================
 spawn(function()
     while task.wait(60) do
         game:GetService("VirtualUser"):ClickButton2(Vector2.new())
