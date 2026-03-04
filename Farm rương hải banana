@@ -122,3 +122,18 @@ end)
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then dragStart = nil end
 end)
+-- ================= NÚT TRÒN BẬT/TẮT MENU =================
+local ToggleBtn = Instance.new("TextButton", Gui)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 15, 0.5, -25)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+ToggleBtn.Text = "🍌"
+ToggleBtn.TextSize = 28
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextColor3 = Color3.new(0,0,0)
+
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1,0)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+end)
