@@ -1,28 +1,19 @@
 --[[
     🍌 FARM RƯƠNG PRO MAX
     👑 Author: hải8a
-    🔑 Key: haidz (Vĩnh viễn)
+    🔑 Key: haidz
 ]]
 
--- ================= KEY SYSTEM =================
+-- ================= KEY =================
 local CorrectKey = "haidz"
 
-if not getgenv().HaiSavedKey then
-    getgenv().HaiSavedKey = nil
-end
-
-if getgenv().HaiSavedKey ~= CorrectKey then
-    if game.CoreGui:FindFirstChild("HaiKeySystem") then
-        game.CoreGui.HaiKeySystem:Destroy()
-    end
-
+if not getgenv().HaiKey or getgenv().HaiKey ~= CorrectKey then
     local KeyGui = Instance.new("ScreenGui", game.CoreGui)
-    KeyGui.Name = "HaiKeySystem"
     KeyGui.ResetOnSpawn = false
-
+    
     local Frame = Instance.new("Frame", KeyGui)
-    Frame.Size = UDim2.new(0, 320, 0, 180)
-    Frame.Position = UDim2.new(0.5, -160, 0.5, -90)
+    Frame.Size = UDim2.new(0,300,0,160)
+    Frame.Position = UDim2.new(0.5,-150,0.5,-80)
     Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
     Frame.Active = true
     Frame.Draggable = true
@@ -31,195 +22,223 @@ if getgenv().HaiSavedKey ~= CorrectKey then
     local Title = Instance.new("TextLabel", Frame)
     Title.Size = UDim2.new(1,0,0,40)
     Title.BackgroundTransparency = 1
-    Title.Text = "🍌 FARM RƯƠNG PRO MAX"
+    Title.Text = "🔑 Nhập Key"
     Title.TextColor3 = Color3.new(1,1,1)
     Title.TextScaled = true
 
     local Box = Instance.new("TextBox", Frame)
-    Box.Size = UDim2.new(0.8,0,0,40)
+    Box.Size = UDim2.new(0.8,0,0,35)
     Box.Position = UDim2.new(0.1,0,0.4,0)
     Box.PlaceholderText = "Nhập key..."
     Box.TextScaled = true
 
-    local Button = Instance.new("TextButton", Frame)
-    Button.Size = UDim2.new(0.8,0,0,40)
-    Button.Position = UDim2.new(0.1,0,0.7,0)
-    Button.Text = "Xác nhận"
-    Button.TextScaled = true
-    Button.BackgroundColor3 = Color3.fromRGB(255,215,0)
+    local Btn = Instance.new("TextButton", Frame)
+    Btn.Size = UDim2.new(0.8,0,0,35)
+    Btn.Position = UDim2.new(0.1,0,0.7,0)
+    Btn.Text = "Xác nhận"
+    Btn.BackgroundColor3 = Color3.fromRGB(255,215,0)
+    Btn.TextScaled = true
 
-    Button.MouseButton1Click:Connect(function()
+    Btn.MouseButton1Click:Connect(function()
         if Box.Text == CorrectKey then
-            getgenv().HaiSavedKey = CorrectKey
+            getgenv().HaiKey = CorrectKey
             KeyGui:Destroy()
         else
-            Button.Text = "❌ Sai Key!"
+            Btn.Text = "❌ Sai Key!"
         end
     end)
 
-    repeat task.wait() until getgenv().HaiSavedKey == CorrectKey
+    repeat task.wait() until getgenv().HaiKey == CorrectKey
 end
 
--- ================= LOAD UI =================
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- ================= BIẾN =================
-_G.AutoChest = false
-_G.Method = "Bay (An toàn)"
-_G.Speed = 220
-
-local Player = game.Players.LocalPlayer
+-- ================= SERVICES =================
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
--- ================= MENU =================
-local Window = Rayfield:CreateWindow({
-   Name = "🍌 FARM RƯƠNG PRO MAX",
-   LoadingTitle = "Author: hải8a",
-   LoadingSubtitle = "Đang khởi động...",
-   ConfigurationSaving = { Enabled = false }
-})
-
-local MainTab = Window:CreateTab("Auto Farm", 4483362458)
+-- ================= VARIABLES =================
+local AutoFarm = false
+local Fly = false
+local FlySpeed = 60
 
 local function getRoot()
     return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 end
 
-local function moveTo(cf)
+-- ================= FLY SYSTEM =================
+local BV, BG
+
+local function startFly()
     local root = getRoot()
-    if not root or not _G.AutoChest then return end
+    if not root then return end
 
-    if _G.Method == "Teleport (Nhanh)" then
-        root.CFrame = cf * CFrame.new(0,3,0)
-        task.wait(0.15)
-    else
-        local dist = (root.Position - cf.Position).Magnitude
-        local tween = TweenService:Create(
-            root,
-            TweenInfo.new(dist/_G.Speed, Enum.EasingStyle.Linear),
-            {CFrame = cf * CFrame.new(0,3,0)}
-        )
-        tween:Play()
-        tween.Completed:Wait()
-    end
-end
+    BV = Instance.new("BodyVelocity")
+    BV.MaxForce = Vector3.new(9e9,9e9,9e9)
+    BV.Velocity = Vector3.zero
+    BV.Parent = root
 
-local function serverHop()
-    local Api = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
-    local s,res = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(Api))
+    BG = Instance.new("BodyGyro")
+    BG.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    BG.CFrame = root.CFrame
+    BG.Parent = root
+
+    RunService.RenderStepped:Connect(function()
+        if Fly and BV and BG then
+            local cam = workspace.CurrentCamera
+            BG.CFrame = cam.CFrame
+            BV.Velocity = cam.CFrame.LookVector * FlySpeed
+        end
     end)
-    if s then
-        for _,v in pairs(res.data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,v.id,Player)
-                break
+end
+
+local function stopFly()
+    if BV then BV:Destroy() end
+    if BG then BG:Destroy() end
+end
+
+-- ================= TELEPORT CHEST =================
+local function smoothTeleport(cf)
+    local root = getRoot()
+    if not root then return end
+
+    local dist = (root.Position - cf.Position).Magnitude
+    local time = math.clamp(dist/300,0.05,0.25)
+
+    local tween = TweenService:Create(
+        root,
+        TweenInfo.new(time,Enum.EasingStyle.Linear),
+        {CFrame = cf * CFrame.new(0,3,0)}
+    )
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+local function touchChest(part)
+    local root = getRoot()
+    if not root then return end
+    firetouchinterest(root,part,0)
+    task.wait()
+    firetouchinterest(root,part,1)
+end
+
+local function farmChest()
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("TouchTransmitter") and v.Parent and string.find(v.Parent.Name,"Chest") then
+            local part = v.Parent:FindFirstChildWhichIsA("BasePart")
+            if part then
+                smoothTeleport(part.CFrame)
+                task.wait(0.05)
+                touchChest(part)
             end
         end
     end
 end
 
-MainTab:CreateDropdown({
-   Name = "Chế độ di chuyển",
-   Options = {"Bay (An toàn)", "Teleport (Nhanh)"},
-   CurrentOption = "Bay (An toàn)",
-   Callback = function(o) _G.Method = o end,
-})
-
-MainTab:CreateToggle({
-   Name = "Bật Auto Farm Rương",
-   CurrentValue = false,
-   Callback = function(v)
-      _G.AutoChest = v
-      if v then
-          spawn(function()
-              while _G.AutoChest do
-                  local found = false
-                  for _,x in pairs(workspace:GetDescendants()) do
-                      if not _G.AutoChest then break end
-                      if x:IsA("TouchTransmitter") and x.Parent.Name:find("Chest") then
-                          found = true
-                          moveTo(x.Parent.CFrame)
-                          task.wait(0.1)
-                      end
-                  end
-                  if not found then
-                      Rayfield:Notify({
-                          Title="Hết rương",
-                          Content="Đang nhảy server...",
-                          Duration=3
-                      })
-                      serverHop()
-                      break
-                  end
-                  task.wait(1)
-              end
-          end)
-      end
-   end,
-})
-
--- ================= PRO MAX FLOAT BUTTON =================
-if CoreGui:FindFirstChild("HaiBananaBtn") then
-    CoreGui.HaiBananaBtn:Destroy()
-end
-
-local RunService = game:GetService("RunService")
-
-local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "HaiBananaBtn"
-ScreenGui.ResetOnSpawn = false
-
-local Btn = Instance.new("ImageButton", ScreenGui)
-Btn.Size = UDim2.new(0,55,0,55)
-Btn.Position = UDim2.new(0.1,0,0.2,0)
-Btn.Image = "rbxassetid://6031289435"
-Btn.Active = true
-Btn.Draggable = true
-Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
-
-spawn(function()
-    local hue = 0
-    while Btn.Parent do
-        Btn.BackgroundColor3 = Color3.fromHSV(hue,1,1)
-        hue = (hue + 0.005) % 1
-        RunService.RenderStepped:Wait()
-    end
-end)
-
-local function GetRayfieldGui()
-    for _, v in pairs(CoreGui:GetChildren()) do
-        if v:IsA("ScreenGui") and v ~= ScreenGui then
-            if v:FindFirstChild("Main", true) then
-                return v
-            end
+-- ================= SERVER HOP =================
+local function serverHop()
+    local API = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?limit=100"
+    local data = HttpService:JSONDecode(game:HttpGet(API))
+    for _,v in pairs(data.data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId,v.id,Player)
+            break
         end
     end
 end
 
-Btn.MouseButton1Click:Connect(function()
-    local gui = GetRayfieldGui()
-    if gui then
-        gui.Enabled = not gui.Enabled
+-- ================= UI =================
+local Gui = Instance.new("ScreenGui", game.CoreGui)
+Gui.ResetOnSpawn = false
+
+local Main = Instance.new("Frame", Gui)
+Main.Size = UDim2.new(0,400,0,350)
+Main.Position = UDim2.new(0.5,-200,0.5,-175)
+Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", Main)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(255,215,0)
+Stroke.Thickness = 3
+
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1,0,0,50)
+Title.BackgroundColor3 = Color3.fromRGB(255,215,0)
+Title.Text = "🍌 FARM RƯƠNG PRO MAX"
+Title.TextColor3 = Color3.fromRGB(20,20,20)
+Title.TextScaled = true
+
+-- Auto Farm Toggle
+local FarmBtn = Instance.new("TextButton", Main)
+FarmBtn.Size = UDim2.new(0.8,0,0,40)
+FarmBtn.Position = UDim2.new(0.1,0,0.2,0)
+FarmBtn.Text = "Auto Farm: OFF"
+FarmBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+FarmBtn.TextColor3 = Color3.new(1,1,1)
+FarmBtn.TextScaled = true
+Instance.new("UICorner", FarmBtn)
+
+FarmBtn.MouseButton1Click:Connect(function()
+    AutoFarm = not AutoFarm
+    FarmBtn.Text = "Auto Farm: "..(AutoFarm and "ON" or "OFF")
+    if AutoFarm then
+        spawn(function()
+            while AutoFarm do
+                farmChest()
+                task.wait(1)
+            end
+        end)
     end
 end)
 
--- ================= ANTI =================
+-- Fly Toggle
+local FlyBtn = Instance.new("TextButton", Main)
+FlyBtn.Size = UDim2.new(0.8,0,0,40)
+FlyBtn.Position = UDim2.new(0.1,0,0.35,0)
+FlyBtn.Text = "Fly: OFF"
+FlyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+FlyBtn.TextColor3 = Color3.new(1,1,1)
+FlyBtn.TextScaled = true
+Instance.new("UICorner", FlyBtn)
+
+FlyBtn.MouseButton1Click:Connect(function()
+    Fly = not Fly
+    FlyBtn.Text = "Fly: "..(Fly and "ON" or "OFF")
+    if Fly then
+        startFly()
+    else
+        stopFly()
+    end
+end)
+
+-- Fly Speed
+local SpeedLabel = Instance.new("TextLabel", Main)
+SpeedLabel.Size = UDim2.new(0.8,0,0,30)
+SpeedLabel.Position = UDim2.new(0.1,0,0.5,0)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Fly Speed: "..FlySpeed
+SpeedLabel.TextColor3 = Color3.new(1,1,1)
+SpeedLabel.TextScaled = true
+
+local SpeedBtn = Instance.new("TextButton", Main)
+SpeedBtn.Size = UDim2.new(0.8,0,0,35)
+SpeedBtn.Position = UDim2.new(0.1,0,0.6,0)
+SpeedBtn.Text = "Tăng Fly Speed"
+SpeedBtn.BackgroundColor3 = Color3.fromRGB(255,215,0)
+SpeedBtn.TextScaled = true
+Instance.new("UICorner", SpeedBtn)
+
+SpeedBtn.MouseButton1Click:Connect(function()
+    FlySpeed = math.clamp(FlySpeed + 20,20,300)
+    SpeedLabel.Text = "Fly Speed: "..FlySpeed
+end)
+
+-- Anti AFK
 spawn(function()
-    while task.wait(5) do
+    while task.wait(60) do
         game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-        for _,p in pairs(game.Players:GetPlayers()) do
-            if p:GetRankInGroup(2830050)>=250 then
-                serverHop()
-            end
-        end
     end
 end)
-
-Rayfield:Notify({
-    Title="🍌 FARM RƯƠNG PRO MAX",
-    Content="Chạy thành công!",
-    Duration=5
-})
