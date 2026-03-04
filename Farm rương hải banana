@@ -1,17 +1,17 @@
 --[[
     👑 AUTHOR: HẢI8A
-    🍌 BANANA HUB (ANTI-KICK UPDATE)
-    🚀 KEY: haidz
+    🍌 PHIÊN BẢN: ALL-IN-ONE (SIÊU CẤP FINAL)
+    🛡️ TÍNH NĂNG: BỎ RƯƠNG FAKE + ANTI KICK + SERVER HOP
 ]]
 
--- Xóa UI cũ
 if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
 
+-- ================= BIẾN HỆ THỐNG =================
 getgenv().AutoFarm = false
 getgenv().AntiAFK = true
-getgenv().AutoRejoin = true -- Tự động vào lại khi bị lỗi
+getgenv().AutoRejoin = true
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -21,18 +21,14 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= HỆ THỐNG CHỐNG KICK (CORE) =================
-
--- 1. Chống AFK (Đứng yên 20p)
+-- ================= LOGIC CHỐNG KICK =================
 Player.Idled:Connect(function()
     if getgenv().AntiAFK then
         VirtualUser:CaptureController()
         VirtualUser:ClickButton2(Vector2.new())
-        print("Hải8a Hub: Đã chặn Kick AFK!")
     end
 end)
 
--- 2. Tự động vào lại khi bị văng (Lỗi mạng/Server)
 game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
     if getgenv().AutoRejoin and child.Name == "ErrorPrompt" then
         task.wait(2)
@@ -40,34 +36,31 @@ game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(func
     end
 end)
 
--- ================= HÀM HỖ TRỢ SERVER =================
-local function ServerHop()
-    local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
-    for i, v in pairs(Servers.data) do
-        if v.playing < v.maxPlayers and v.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, Player)
-            break
-        end
-    end
-end
-
--- ================= LOGIC FARM =================
+-- ================= LOGIC FARM (LỌC RƯƠNG FAKE) =================
 task.spawn(function()
     while task.wait(0.2) do
         if getgenv().AutoFarm then
             pcall(function()
                 local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if not getgenv().AutoFarm then break end
-                        if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
-                            local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
-                            if target then
-                                root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-                                firetouchinterest(root, target, 0)
-                                firetouchinterest(root, target, 1)
-                                task.wait(0.3)
+                if not root then return end
+                
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if not getgenv().AutoFarm then break end
+                    
+                    local name = v.Name:lower()
+                    if name:find("chest") or name:find("rương") then
+                        local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
+                        
+                        -- KIỂM TRA RƯƠNG THẬT/GIẢ
+                        if target and target.Parent and target.Transparency < 0.8 and target.Position.Magnitude > 10 then
+                            root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
+                            firetouchinterest(root, target, 0)
+                            firetouchinterest(root, target, 1)
+                            
+                            for _, p in pairs(v:GetDescendants()) do
+                                if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
                             end
+                            task.wait(0.4)
                         end
                     end
                 end
@@ -76,7 +69,7 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN CHÍNH =================
+-- ================= GIAO DIỆN CHUYÊN NGHIỆP =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
 
@@ -84,10 +77,8 @@ local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 480, 0, 320)
 Main.Position = UDim2.new(0.5, -240, 0.5, -160)
 Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 15)
-local Stroke = Instance.new("UIStroke", Main)
-Stroke.Color = Color3.fromRGB(255, 215, 0)
-Stroke.Thickness = 2
+Instance.new("UICorner", Main)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
 -- Sidebar
 local Sidebar = Instance.new("Frame", Main)
@@ -122,8 +113,7 @@ local function CreateTab(name, active)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = active
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+    Page.ScrollBarThickness = 0
     Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
 
     local TabBtn = Instance.new("TextButton", TabContainer)
@@ -149,12 +139,12 @@ local function CreateTab(name, active)
     return Page
 end
 
--- TẠO TAB
+-- Tạo Tab
 local FarmPage = CreateTab("Farm", true)
 local ServerPage = CreateTab("Server", false)
 local SettingPage = CreateTab("Settings", false)
 
--- HÀM THÀNH PHẦN UI
+-- Hàm tạo Nút/Toggle
 local function AddToggle(parent, text, default, callback)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(0.95, 0, 0, 45)
@@ -184,16 +174,21 @@ local function AddButton(parent, text, callback)
     Btn.MouseButton1Click:Connect(callback)
 end
 
--- NỘI DUNG CÁC TAB
+-- Thêm nội dung
 AddToggle(FarmPage, "Auto Farm Rương", false, function(v) getgenv().AutoFarm = v end)
+AddButton(ServerPage, "Server Hop", function()
+    local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
+    for i, v in pairs(Servers.data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, Player)
+            break
+        end
+    end
+end)
+AddToggle(SettingPage, "Chống AFK", true, function(v) getgenv().AntiAFK = v end)
+AddToggle(SettingPage, "Tự Vào Lại", true, function(v) getgenv().AutoRejoin = v end)
 
-AddButton(ServerPage, "Server Hop (Đổi Server)", ServerHop)
-AddButton(ServerPage, "Vào Lại Server", function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player) end)
-
-AddToggle(SettingPage, "Anti-AFK (Chống AFK)", true, function(v) getgenv().AntiAFK = v end)
-AddToggle(SettingPage, "Auto Rejoin (Tự Vào Lại)", true, function(v) getgenv().AutoRejoin = v end)
-
--- ================= NÚT TRÒN 🍌 =================
+-- Nút Tròn 🍌
 local ToggleIcon = Instance.new("TextButton", Gui)
 ToggleIcon.Size = UDim2.new(0, 50, 0, 50)
 ToggleIcon.Position = UDim2.new(0.05, 0, 0.15, 0)
@@ -203,7 +198,7 @@ ToggleIcon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1, 0)
 ToggleIcon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Kéo thả (Mobi/PC)
+-- Kéo thả
 local dragStart, startPos
 Main.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
