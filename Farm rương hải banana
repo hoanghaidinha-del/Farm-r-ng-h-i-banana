@@ -1,12 +1,13 @@
 -- 👑 AUTHOR: HẢI8A
--- 🍌 BANANA HUB UI ONLY
+-- 🍌 BANANA HUB (NO KEY VERSION)
 
--- Xóa trùng UI
+-- Xóa UI cũ nếu có
 if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
 
 -- ================= BIẾN =================
+getgenv().AutoFarm = false
 getgenv().AntiAFK = true
 
 -- ================= SERVICES =================
@@ -51,44 +52,56 @@ Content.BackgroundTransparency = 1
 local Layout = Instance.new("UIListLayout", Content)
 Layout.Padding = UDim.new(0,10)
 
--- Toggle Anti AFK
-local Frame = Instance.new("Frame", Content)
-Frame.Size = UDim2.new(1,-10,0,40)
-Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Instance.new("UICorner", Frame)
+-- ===== Toggle AutoFarm (chỉ đổi trạng thái biến) =====
+local function AddToggle(text, default, callback)
+    local Frame = Instance.new("Frame", Content)
+    Frame.Size = UDim2.new(1,-10,0,40)
+    Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    Instance.new("UICorner", Frame)
 
-local Label = Instance.new("TextLabel", Frame)
-Label.Size = UDim2.new(0.7,0,1,0)
-Label.Position = UDim2.new(0,10,0,0)
-Label.Text = "Anti AFK"
-Label.TextColor3 = Color3.new(1,1,1)
-Label.BackgroundTransparency = 1
-Label.TextXAlignment = Enum.TextXAlignment.Left
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size = UDim2.new(0.7,0,1,0)
+    Label.Position = UDim2.new(0,10,0,0)
+    Label.Text = text
+    Label.TextColor3 = Color3.new(1,1,1)
+    Label.BackgroundTransparency = 1
+    Label.TextXAlignment = Enum.TextXAlignment.Left
 
-local Btn = Instance.new("TextButton", Frame)
-Btn.Size = UDim2.new(0,50,0,24)
-Btn.Position = UDim2.new(1,-60,0.5,-12)
-Btn.BackgroundColor3 = Color3.fromRGB(0,200,0)
-Btn.Text = ""
-Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
+    local Btn = Instance.new("TextButton", Frame)
+    Btn.Size = UDim2.new(0,50,0,24)
+    Btn.Position = UDim2.new(1,-60,0.5,-12)
+    Btn.Text = ""
+    Btn.BackgroundColor3 = default and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
 
-local Circle = Instance.new("Frame", Btn)
-Circle.Size = UDim2.new(0,20,0,20)
-Circle.Position = UDim2.new(1,-22,0.5,-10)
-Circle.BackgroundColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", Circle)
+    local Circle = Instance.new("Frame", Btn)
+    Circle.Size = UDim2.new(0,20,0,20)
+    Circle.Position = default and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
+    Circle.BackgroundColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", Circle).CornerRadius = UDim.new(1,0)
 
-Btn.MouseButton1Click:Connect(function()
-    getgenv().AntiAFK = not getgenv().AntiAFK
-    TweenService:Create(Btn, TweenInfo.new(0.3), {
-        BackgroundColor3 = getgenv().AntiAFK and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
-    }):Play()
-    TweenService:Create(Circle, TweenInfo.new(0.3), {
-        Position = getgenv().AntiAFK and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
-    }):Play()
+    local toggled = default
+    Btn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        callback(toggled)
+        TweenService:Create(Btn, TweenInfo.new(0.3), {
+            BackgroundColor3 = toggled and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
+        }):Play()
+        TweenService:Create(Circle, TweenInfo.new(0.3), {
+            Position = toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
+        }):Play()
+    end)
+end
+
+AddToggle("Auto Farm (Biến Trạng Thái)", false, function(v)
+    getgenv().AutoFarm = v
 end)
 
--- Anti AFK
+AddToggle("Anti AFK", true, function(v)
+    getgenv().AntiAFK = v
+end)
+
+-- Anti AFK Logic
 Player.Idled:Connect(function()
     if getgenv().AntiAFK then
         VirtualUser:CaptureController()
@@ -96,7 +109,7 @@ Player.Idled:Connect(function()
     end
 end)
 
--- Drag UI
+-- ===== Drag UI =====
 local dragStart, startPos
 Main.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -116,7 +129,7 @@ Main.InputChanged:Connect(function(input)
     end
 end)
 
--- Nút tròn bật tắt menu
+-- ===== Nút Tròn Bật/Tắt Menu =====
 local ToggleIcon = Instance.new("TextButton", Gui)
 ToggleIcon.Size = UDim2.new(0,50,0,50)
 ToggleIcon.Position = UDim2.new(0,10,0.5,-25)
