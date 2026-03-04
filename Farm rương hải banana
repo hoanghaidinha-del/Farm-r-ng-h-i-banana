@@ -1,7 +1,7 @@
 --[[
-    👑 AUTHOR: HẢI8A
-    🍌 PHIÊN BẢN: ALL-IN-ONE (SIÊU CẤP FINAL)
-    🛡️ TÍNH NĂNG: BỎ RƯƠNG FAKE + ANTI KICK + SERVER HOP
+    👑 TÁC GIẢ: HẢI8A
+    🍌 PHIÊN BẢN: BANANA HUB FULL (FIXED)
+    🚀 KEY VĨNH VIỄN: haidz
 ]]
 
 if game.CoreGui:FindFirstChild("Hai8aHub") then
@@ -10,18 +10,18 @@ end
 
 -- ================= BIẾN HỆ THỐNG =================
 getgenv().AutoFarm = false
+getgenv().FarmMethod = "Tween" -- Tween hoặc Teleport
+getgenv().TweenSpeed = 100
+getgenv().AntiAdmin = true
 getgenv().AntiAFK = true
-getgenv().AutoRejoin = true
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= LOGIC CHỐNG KICK =================
+-- ================= HÀM CHỐNG ADMIN & AFK =================
 Player.Idled:Connect(function()
     if getgenv().AntiAFK then
         VirtualUser:CaptureController()
@@ -29,33 +29,53 @@ Player.Idled:Connect(function()
     end
 end)
 
-game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
-    if getgenv().AutoRejoin and child.Name == "ErrorPrompt" then
-        task.wait(2)
-        TeleportService:Teleport(game.PlaceId, Player)
+Players.PlayerAdded:Connect(function(plr)
+    if getgenv().AntiAdmin then
+        local Admins = {"admin", "mod", "owner", "staff", "creator"}
+        for _, word in pairs(Admins) do
+            if plr.Name:lower():find(word) or plr:GetRankInGroup(game.CreatorId) > 100 then
+                Player:Kick("🛡️ Hải8a Hub: Đã phát hiện Admin ("..plr.Name.."). Đã tự động thoát để bảo vệ bạn!")
+            end
+        end
     end
 end)
 
--- ================= LOGIC FARM (LỌC RƯƠNG FAKE) =================
+-- ================= LOGIC DI CHUYỂN & FARM =================
+local function SafeMove(targetCFrame)
+    local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Fix kẹt (Noclip)
+    for _, part in pairs(Player.Character:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+
+    if getgenv().FarmMethod == "Teleport" then
+        root.CFrame = targetCFrame
+    else
+        local distance = (root.Position - targetCFrame.Position).Magnitude
+        local duration = distance / getgenv().TweenSpeed
+        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end
+
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         if getgenv().AutoFarm then
             pcall(function()
-                local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-                if not root then return end
-                
                 for _, v in pairs(workspace:GetDescendants()) do
                     if not getgenv().AutoFarm then break end
-                    
-                    local name = v.Name:lower()
-                    if name:find("chest") or name:find("rương") then
+                    if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
                         local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
                         
-                        -- KIỂM TRA RƯƠNG THẬT/GIẢ
-                        if target and target.Parent and target.Transparency < 0.8 and target.Position.Magnitude > 10 then
-                            root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-                            firetouchinterest(root, target, 0)
-                            firetouchinterest(root, target, 1)
+                        -- Lọc rương fake & rương lỗi
+                        if target and target.Parent and target.Transparency < 0.7 and target.Position.Magnitude > 10 then
+                            SafeMove(target.CFrame + Vector3.new(0, 3, 0))
+                            
+                            firetouchinterest(Player.Character.HumanoidRootPart, target, 0)
+                            firetouchinterest(Player.Character.HumanoidRootPart, target, 1)
                             
                             for _, p in pairs(v:GetDescendants()) do
                                 if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
@@ -69,146 +89,148 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN CHUYÊN NGHIỆP =================
+-- ================= GIAO DIỆN CHUẨN BANANA =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
 
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 480, 0, 320)
-Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-Instance.new("UICorner", Main)
+Main.Size = UDim2.new(0, 500, 0, 350)
+Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
--- Sidebar
+-- Sidebar (Tabs)
 local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 140, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Sidebar.Size = UDim2.new(0, 150, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Instance.new("UICorner", Sidebar)
+
+local SidebarList = Instance.new("UIListLayout", Sidebar)
+SidebarList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarList.Padding = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", Sidebar)
 Title.Size = UDim2.new(1, 0, 0, 60)
-Title.Text = "HẢI8A 🍌"
+Title.Text = "HẢI8A HUB 🍌"
 Title.TextColor3 = Color3.fromRGB(255, 215, 0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
+Title.TextSize = 20
 Title.BackgroundTransparency = 1
 
-local TabContainer = Instance.new("Frame", Sidebar)
-TabContainer.Position = UDim2.new(0, 0, 0, 70)
-TabContainer.Size = UDim2.new(1, 0, 1, -70)
-TabContainer.BackgroundTransparency = 1
-local TabLayout = Instance.new("UIListLayout", TabContainer)
-TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-TabLayout.Padding = UDim.new(0, 8)
-
--- Pages
-local Pages = Instance.new("Frame", Main)
-Pages.Position = UDim2.new(0, 150, 0, 10)
-Pages.Size = UDim2.new(1, -160, 1, -20)
-Pages.BackgroundTransparency = 1
+-- Page Container
+local PageContainer = Instance.new("Frame", Main)
+PageContainer.Position = UDim2.new(0, 160, 0, 10)
+PageContainer.Size = UDim2.new(1, -170, 1, -20)
+PageContainer.BackgroundTransparency = 1
 
 local function CreateTab(name, active)
-    local Page = Instance.new("ScrollingFrame", Pages)
+    local Page = Instance.new("ScrollingFrame", PageContainer)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = active
     Page.ScrollBarThickness = 0
     Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
 
-    local TabBtn = Instance.new("TextButton", TabContainer)
-    TabBtn.Size = UDim2.new(0.85, 0, 0, 40)
+    local TabBtn = Instance.new("TextButton", Sidebar)
+    TabBtn.Size = UDim2.new(0.9, 0, 0, 40)
     TabBtn.Text = name
     TabBtn.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
-    TabBtn.TextColor3 = active and Color3.new(0, 0, 0) or Color3.new(1, 1, 1)
+    TabBtn.TextColor3 = active and Color3.new(0,0,0) or Color3.new(1,1,1)
     TabBtn.Font = Enum.Font.GothamBold
     Instance.new("UICorner", TabBtn)
 
     TabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(Pages:GetChildren()) do p.Visible = false end
-        for _, b in pairs(TabContainer:GetChildren()) do 
-            if b:IsA("TextButton") then
-                b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-                b.TextColor3 = Color3.new(1, 1, 1)
-            end
+        for _, p in pairs(PageContainer:GetChildren()) do p.Visible = false end
+        for _, b in pairs(Sidebar:GetChildren()) do 
+            if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(30, 30, 30) b.TextColor3 = Color3.new(1,1,1) end
         end
         Page.Visible = true
         TabBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        TabBtn.TextColor3 = Color3.new(0, 0, 0)
+        TabBtn.TextColor3 = Color3.new(0,0,0)
     end)
     return Page
 end
 
--- Tạo Tab
-local FarmPage = CreateTab("Farm", true)
-local ServerPage = CreateTab("Server", false)
-local SettingPage = CreateTab("Settings", false)
+-- Khởi tạo Tabs
+local FarmTab = CreateTab("Main Farm", true)
+local MethodTab = CreateTab("Methods", false)
+local AntiAdminTab = CreateTab("Anti-Admin", false)
 
--- Hàm tạo Nút/Toggle
+-- --- TAB FARM ---
 local function AddToggle(parent, text, default, callback)
     local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(0.95, 0, 0, 45)
-    Btn.BackgroundColor3 = default and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
+    Btn.Size = UDim2.new(1, 0, 0, 45)
+    Btn.BackgroundColor3 = default and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(35, 35, 35)
     Btn.Text = text .. ": " .. (default and "ON" or "OFF")
     Btn.TextColor3 = Color3.new(1, 1, 1)
     Btn.Font = Enum.Font.GothamBold
     Instance.new("UICorner", Btn)
 
-    local toggled = default
+    local state = default
     Btn.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        Btn.Text = text .. ": " .. (toggled and "ON" or "OFF")
-        Btn.BackgroundColor3 = toggled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-        callback(toggled)
+        state = not state
+        callback(state)
+        Btn.Text = text .. ": " .. (state and "ON" or "OFF")
+        Btn.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(35, 35, 35)
     end)
 end
 
-local function AddButton(parent, text, callback)
-    local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(0.95, 0, 0, 45)
-    Btn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    Btn.Text = text
-    Btn.TextColor3 = Color3.new(0, 0, 0)
-    Btn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", Btn)
-    Btn.MouseButton1Click:Connect(callback)
-end
+AddToggle(FarmTab, "Auto Farm Chest", false, function(v) getgenv().AutoFarm = v end)
 
--- Thêm nội dung
-AddToggle(FarmPage, "Auto Farm Rương", false, function(v) getgenv().AutoFarm = v end)
-AddButton(ServerPage, "Server Hop", function()
-    local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
-    for i, v in pairs(Servers.data) do
-        if v.playing < v.maxPlayers and v.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, Player)
-            break
-        end
+-- --- TAB METHOD ---
+AddToggle(MethodTab, "Dùng Bay (Tween Mode)", true, function(v) 
+    getgenv().FarmMethod = v and "Tween" or "Teleport" 
+end)
+
+-- Chỉnh tốc độ bay
+local SpeedLabel = Instance.new("TextLabel", MethodTab)
+SpeedLabel.Size = UDim2.new(1,0,0,20)
+SpeedLabel.Text = "Tốc Độ Bay: " .. getgenv().TweenSpeed
+SpeedLabel.TextColor3 = Color3.new(1,1,1)
+SpeedLabel.BackgroundTransparency = 1
+
+local SpeedSlider = Instance.new("TextBox", MethodTab)
+SpeedSlider.Size = UDim2.new(1,0,0,40)
+SpeedSlider.BackgroundColor3 = Color3.fromRGB(35,35,35)
+SpeedSlider.Text = tostring(getgenv().TweenSpeed)
+SpeedSlider.PlaceholderText = "Nhập tốc độ (50-200)..."
+SpeedSlider.TextColor3 = Color3.fromRGB(255, 215, 0)
+Instance.new("UICorner", SpeedSlider)
+
+SpeedSlider.FocusLost:Connect(function()
+    local val = tonumber(SpeedSlider.Text)
+    if val then
+        getgenv().TweenSpeed = val
+        SpeedLabel.Text = "Tốc Độ Bay: " .. val
     end
 end)
-AddToggle(SettingPage, "Chống AFK", true, function(v) getgenv().AntiAFK = v end)
-AddToggle(SettingPage, "Tự Vào Lại", true, function(v) getgenv().AutoRejoin = v end)
 
--- Nút Tròn 🍌
-local ToggleIcon = Instance.new("TextButton", Gui)
-ToggleIcon.Size = UDim2.new(0, 50, 0, 50)
-ToggleIcon.Position = UDim2.new(0.05, 0, 0.15, 0)
-ToggleIcon.Text = "🍌"
-ToggleIcon.TextSize = 30
-ToggleIcon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1, 0)
-ToggleIcon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+-- --- TAB ANTI ADMIN ---
+AddToggle(AntiAdminTab, "Chế Độ Chống Admin", true, function(v) getgenv().AntiAdmin = v end)
+AddToggle(AntiAdminTab, "Chống AFK", true, function(v) getgenv().AntiAFK = v end)
 
--- Kéo thả
-local dragStart, startPos
+-- ================= NÚT TRÒN 🍌 =================
+local Icon = Instance.new("TextButton", Gui)
+Icon.Size = UDim2.new(0, 55, 0, 55)
+Icon.Position = UDim2.new(0.05, 0, 0.15, 0)
+Icon.Text = "🍌"
+Icon.TextSize = 30
+Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
+Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+
+-- Kéo thả UI
+local dragging, dragStart, startPos
 Main.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragStart = input.Position startPos = Main.Position
+        dragging = true dragStart = input.Position startPos = Main.Position
     end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-UserInputService.InputEnded:Connect(function(input) dragStart = nil end)
+UserInputService.InputEnded:Connect(function() dragging = false end)
