@@ -1,161 +1,130 @@
---[[
-    👑 AUTHOR: HẢI8A
-    🔑 KEY: haidz (VĨNH VIỄN)
-    🚀 PHIÊN BẢN: PRO MAX V2 (TỐI ƯU HÓA)
-]]
+-- 👑 AUTHOR: HẢI8A
+-- 🍌 BANANA HUB UI ONLY
 
-local CorrectKey = "haidz"
-
--- [ PHẦN KIỂM TRA KEY - GIỮ NGUYÊN THEO YÊU CẦU CỦA HẢI8A ]
-if not getgenv().HaiKey or getgenv().HaiKey ~= CorrectKey then
-    -- (Giữ nguyên đoạn UI Key của bạn ở đây để bảo mật)
-    -- Nếu bạn muốn mình gộp luôn vào thì cứ nói nhé!
-    getgenv().HaiKey = CorrectKey -- Tạm thời set để chạy test
+-- Xóa trùng UI
+if game.CoreGui:FindFirstChild("Hai8aHub") then
+    game.CoreGui.Hai8aHub:Destroy()
 end
+
+-- ================= BIẾN =================
+getgenv().AntiAFK = true
 
 -- ================= SERVICES =================
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
 
--- ================= CẤU HÌNH PRO =================
-local Config = {
-    AutoFarm = false,
-    FarmDistance = 500, -- Khoảng cách quét rương
-    SafeMode = true,    -- Tạm dừng nếu có Admin/Player lạ ở gần (tùy chọn)
-    TargetNames = {"Chest", "Rương", "Lucky", "Coin", "Box"} -- Danh sách vật phẩm ưu tiên
-}
-
--- ================= HÀM HỖ TRỢ (UTILITIES) =================
-local function SendNotify(title, text, duration)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = title;
-        Text = text;
-        Duration = duration or 3;
-        Icon = "rbxassetid://6031289232"; -- Icon Pro
-    })
-end
-
-local function getRoot()
-    return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- ================= THUẬT TOÁN FARM TỐI ƯU =================
-local function startFarming()
-    SendNotify("HẢI8A PRO", "Đã bắt đầu Farm Rương!", 3)
-    
-    while Config.AutoFarm do
-        local root = getRoot()
-        if not root then task.wait(1) continue end
-
-        -- Quét thông minh (Chỉ quét các Part có khả năng là rương)
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if not Config.AutoFarm then break end
-            
-            local isTarget = false
-            for _, name in pairs(Config.TargetNames) do
-                if string.find(obj.Name, name) then
-                    isTarget = true
-                    break
-                end
-            end
-
-            if isTarget and obj:IsA("BasePart") or (obj:IsA("Model") and obj:FindFirstChildWhichIsA("BasePart")) then
-                local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
-                
-                -- Kiểm tra khoảng cách để tránh lag
-                if (root.Position - targetPart.Position).Magnitude < Config.FarmDistance then
-                    
-                    -- Teleport mượt (CFrame)
-                    root.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
-                    
-                    -- Kích hoạt mọi loại tương tác
-                    pcall(function()
-                        firetouchinterest(root, targetPart, 0)
-                        firetouchinterest(root, targetPart, 1)
-                        
-                        -- Quét Prompt/Click bên trong
-                        for _, v in pairs(obj:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then fireproximityprompt(v) end
-                            if v:IsA("ClickDetector") then fireclickdetector(v) end
-                        end
-                    end)
-                    
-                    task.wait(0.1) -- Nghỉ ngắn để server nhận diện nhặt đồ
-                end
-            end
-        end
-        task.wait(0.5)
-    end
-end
-
--- ================= GIAO DIỆN (UI) NÂNG CẤP =================
+-- ================= GUI =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
+Gui.Name = "Hai8aHub"
+Gui.ResetOnSpawn = false
+
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 350, 0, 200)
-Main.Position = UDim2.new(0.5, -175, 0.5, -100)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.Size = UDim2.new(0, 500, 0, 350)
+Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = BoxHandleAdornment.new().Radius
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,10)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(255,215,0)
 
-local UIStroke = Instance.new("UIStroke", Main)
-UIStroke.Color = Color3.fromRGB(255, 215, 0)
-UIStroke.Thickness = 2
-UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+-- Sidebar
+local SideBar = Instance.new("Frame", Main)
+SideBar.Size = UDim2.new(0,150,1,0)
+SideBar.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Instance.new("UICorner", SideBar)
 
-local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-Title.Text = "🍌 HẢI8A - FARM RƯƠNG V2"
-Title.TextColor3 = Color3.fromRGB(0, 0, 0)
+local Title = Instance.new("TextLabel", SideBar)
+Title.Size = UDim2.new(1,0,0,60)
+Title.Text = "HẢI8A HUB 🍌"
+Title.TextColor3 = Color3.fromRGB(255,215,0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+Title.TextSize = 20
+Title.BackgroundTransparency = 1
 
-local ToggleBtn = Instance.new("TextButton", Main)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 50)
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.4, 0)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleBtn.Text = "Trạng thái: TẮT"
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-ToggleBtn.Font = Enum.Font.GothamSemibold
-ToggleBtn.TextSize = 20
-Instance.new("UICorner", ToggleBtn)
+-- Content
+local Content = Instance.new("Frame", Main)
+Content.Size = UDim2.new(1,-160,1,-20)
+Content.Position = UDim2.new(0,155,0,10)
+Content.BackgroundTransparency = 1
 
--- Hiệu ứng đổi màu khi bật
-ToggleBtn.MouseButton1Click:Connect(function()
-    Config.AutoFarm = not Config.AutoFarm
-    if Config.AutoFarm then
-        ToggleBtn.Text = "Trạng thái: ĐANG FARM"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        task.spawn(startFarming)
-    else
-        ToggleBtn.Text = "Trạng thái: TẮT"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        SendNotify("HẢI8A PRO", "Đã dừng Farm!", 2)
+local Layout = Instance.new("UIListLayout", Content)
+Layout.Padding = UDim.new(0,10)
+
+-- Toggle Anti AFK
+local Frame = Instance.new("Frame", Content)
+Frame.Size = UDim2.new(1,-10,0,40)
+Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", Frame)
+
+local Label = Instance.new("TextLabel", Frame)
+Label.Size = UDim2.new(0.7,0,1,0)
+Label.Position = UDim2.new(0,10,0,0)
+Label.Text = "Anti AFK"
+Label.TextColor3 = Color3.new(1,1,1)
+Label.BackgroundTransparency = 1
+Label.TextXAlignment = Enum.TextXAlignment.Left
+
+local Btn = Instance.new("TextButton", Frame)
+Btn.Size = UDim2.new(0,50,0,24)
+Btn.Position = UDim2.new(1,-60,0.5,-12)
+Btn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+Btn.Text = ""
+Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
+
+local Circle = Instance.new("Frame", Btn)
+Circle.Size = UDim2.new(0,20,0,20)
+Circle.Position = UDim2.new(1,-22,0.5,-10)
+Circle.BackgroundColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", Circle)
+
+Btn.MouseButton1Click:Connect(function()
+    getgenv().AntiAFK = not getgenv().AntiAFK
+    TweenService:Create(Btn, TweenInfo.new(0.3), {
+        BackgroundColor3 = getgenv().AntiAFK and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
+    }):Play()
+    TweenService:Create(Circle, TweenInfo.new(0.3), {
+        Position = getgenv().AntiAFK and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
+    }):Play()
+end)
+
+-- Anti AFK
+Player.Idled:Connect(function()
+    if getgenv().AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
     end
 end)
 
--- ================= NÚT ẨN/HIỆN (COMPACT) =================
-local MiniBtn = Instance.new("TextButton", Gui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position = UDim2.new(0.9, 0, 0.1, 0)
-MiniBtn.Text = "🍌"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-MiniBtn.TextSize = 30
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
+-- Drag UI
+local dragStart, startPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragStart = nil end
+        end)
+    end
+end)
 
-MiniBtn.MouseButton1Click:Connect(function()
+Main.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragStart then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                  startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Nút tròn bật tắt menu
+local ToggleIcon = Instance.new("TextButton", Gui)
+ToggleIcon.Size = UDim2.new(0,50,0,50)
+ToggleIcon.Position = UDim2.new(0,10,0.5,-25)
+ToggleIcon.Text = "🍌"
+ToggleIcon.TextSize = 30
+ToggleIcon.BackgroundColor3 = Color3.fromRGB(255,215,0)
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1,0)
+
+ToggleIcon.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
 end)
-
--- ================= ANTI AFK (VÔ HIỆU HÓA KICK) =================
-Player.Idled:Connect(function()
-    game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-end)
-
-SendNotify("HỆ THỐNG", "Script Hải8a đã sẵn sàng!", 5)
