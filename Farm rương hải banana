@@ -55,62 +55,28 @@ end
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
 -- ================= VARIABLES =================
 local AutoFarm = false
-local Fly = false
-local FlySpeed = 60
+local FarmSpeed = 300
 
 local function getRoot()
     return Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- ================= FLY SYSTEM =================
-local BV, BG
-
-local function startFly()
-    local root = getRoot()
-    if not root then return end
-
-    BV = Instance.new("BodyVelocity")
-    BV.MaxForce = Vector3.new(9e9,9e9,9e9)
-    BV.Velocity = Vector3.zero
-    BV.Parent = root
-
-    BG = Instance.new("BodyGyro")
-    BG.MaxTorque = Vector3.new(9e9,9e9,9e9)
-    BG.CFrame = root.CFrame
-    BG.Parent = root
-
-    RunService.RenderStepped:Connect(function()
-        if Fly and BV and BG then
-            local cam = workspace.CurrentCamera
-            BG.CFrame = cam.CFrame
-            BV.Velocity = cam.CFrame.LookVector * FlySpeed
-        end
-    end)
-end
-
-local function stopFly()
-    if BV then BV:Destroy() end
-    if BG then BG:Destroy() end
-end
-
--- ================= TELEPORT CHEST =================
+-- ================= TELEPORT =================
 local function smoothTeleport(cf)
     local root = getRoot()
     if not root then return end
 
     local dist = (root.Position - cf.Position).Magnitude
-    local time = math.clamp(dist/300,0.05,0.25)
+    local time = math.clamp(dist / FarmSpeed, 0.03, 0.3)
 
     local tween = TweenService:Create(
         root,
-        TweenInfo.new(time,Enum.EasingStyle.Linear),
+        TweenInfo.new(time, Enum.EasingStyle.Linear),
         {CFrame = cf * CFrame.new(0,3,0)}
     )
     tween:Play()
@@ -125,32 +91,51 @@ local function touchChest(part)
     firetouchinterest(root,part,1)
 end
 
-local function farmChest()
+local function getNearestChest()
+    local root = getRoot()
+    if not root then return end
+
+    local nearest, dist = nil, math.huge
+
     for _,v in pairs(workspace:GetDescendants()) do
         if v:IsA("TouchTransmitter") and v.Parent and string.find(v.Parent.Name,"Chest") then
             local part = v.Parent:FindFirstChildWhichIsA("BasePart")
             if part then
-                smoothTeleport(part.CFrame)
-                task.wait(0.05)
-                touchChest(part)
+                local d = (root.Position - part.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    nearest = part
+                end
             end
         end
     end
+    return nearest
 end
 
--- ================= SERVER HOP =================
-local function serverHop()
-    local API = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?limit=100"
-    local data = HttpService:JSONDecode(game:HttpGet(API))
-    for _,v in pairs(data.data) do
-        if v.playing < v.maxPlayers and v.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId,v.id,Player)
+local function farmLoop()
+    while AutoFarm do
+        local chest = getNearestChest()
+        if chest then
+            smoothTeleport(chest.CFrame)
+            task.wait(0.05)
+            touchChest(chest)
+        else
+            -- Server Hop khi hết rương
+            local API = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?limit=100"
+            local data = HttpService:JSONDecode(game:HttpGet(API))
+            for _,v in pairs(data.data) do
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId,v.id,Player)
+                    break
+                end
+            end
             break
         end
+        task.wait(0.2)
     end
 end
 
--- ================= UI =================
+-- ================= UI GIỮ NGUYÊN =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.ResetOnSpawn = false
 
@@ -171,7 +156,7 @@ Title.Text = "🍌 FARM RƯƠNG PRO MAX"
 Title.TextColor3 = Color3.fromRGB(20,20,20)
 Title.TextScaled = true
 
--- Auto Farm Toggle
+-- Toggle Auto
 local FarmBtn = Instance.new("TextButton", Main)
 FarmBtn.Size = UDim2.new(0.8,0,0,40)
 FarmBtn.Position = UDim2.new(0.1,0,0.2,0)
@@ -185,55 +170,45 @@ FarmBtn.MouseButton1Click:Connect(function()
     AutoFarm = not AutoFarm
     FarmBtn.Text = "Auto Farm: "..(AutoFarm and "ON" or "OFF")
     if AutoFarm then
-        spawn(function()
-            while AutoFarm do
-                farmChest()
-                task.wait(1)
-            end
-        end)
+        spawn(farmLoop)
     end
 end)
 
--- Fly Toggle
-local FlyBtn = Instance.new("TextButton", Main)
-FlyBtn.Size = UDim2.new(0.8,0,0,40)
-FlyBtn.Position = UDim2.new(0.1,0,0.35,0)
-FlyBtn.Text = "Fly: OFF"
-FlyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-FlyBtn.TextColor3 = Color3.new(1,1,1)
-FlyBtn.TextScaled = true
-Instance.new("UICorner", FlyBtn)
-
-FlyBtn.MouseButton1Click:Connect(function()
-    Fly = not Fly
-    FlyBtn.Text = "Fly: "..(Fly and "ON" or "OFF")
-    if Fly then
-        startFly()
-    else
-        stopFly()
-    end
-end)
-
--- Fly Speed
+-- Label Speed
 local SpeedLabel = Instance.new("TextLabel", Main)
 SpeedLabel.Size = UDim2.new(0.8,0,0,30)
-SpeedLabel.Position = UDim2.new(0.1,0,0.5,0)
+SpeedLabel.Position = UDim2.new(0.1,0,0.6,0)
 SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Text = "Fly Speed: "..FlySpeed
+SpeedLabel.Text = "Farm Speed: "..FarmSpeed
 SpeedLabel.TextColor3 = Color3.new(1,1,1)
 SpeedLabel.TextScaled = true
 
-local SpeedBtn = Instance.new("TextButton", Main)
-SpeedBtn.Size = UDim2.new(0.8,0,0,35)
-SpeedBtn.Position = UDim2.new(0.1,0,0.6,0)
-SpeedBtn.Text = "Tăng Fly Speed"
-SpeedBtn.BackgroundColor3 = Color3.fromRGB(255,215,0)
-SpeedBtn.TextScaled = true
-Instance.new("UICorner", SpeedBtn)
+-- + Speed
+local SpeedUp = Instance.new("TextButton", Main)
+SpeedUp.Size = UDim2.new(0.35,0,0,35)
+SpeedUp.Position = UDim2.new(0.1,0,0.7,0)
+SpeedUp.Text = "+ Speed"
+SpeedUp.BackgroundColor3 = Color3.fromRGB(0,170,0)
+SpeedUp.TextScaled = true
+Instance.new("UICorner", SpeedUp)
 
-SpeedBtn.MouseButton1Click:Connect(function()
-    FlySpeed = math.clamp(FlySpeed + 20,20,300)
-    SpeedLabel.Text = "Fly Speed: "..FlySpeed
+SpeedUp.MouseButton1Click:Connect(function()
+    FarmSpeed = math.clamp(FarmSpeed + 100,100,2000)
+    SpeedLabel.Text = "Farm Speed: "..FarmSpeed
+end)
+
+-- - Speed
+local SpeedDown = Instance.new("TextButton", Main)
+SpeedDown.Size = UDim2.new(0.35,0,0,35)
+SpeedDown.Position = UDim2.new(0.55,0,0.7,0)
+SpeedDown.Text = "- Speed"
+SpeedDown.BackgroundColor3 = Color3.fromRGB(170,0,0)
+SpeedDown.TextScaled = true
+Instance.new("UICorner", SpeedDown)
+
+SpeedDown.MouseButton1Click:Connect(function()
+    FarmSpeed = math.clamp(FarmSpeed - 100,100,2000)
+    SpeedLabel.Text = "Farm Speed: "..FarmSpeed
 end)
 
 -- Anti AFK
