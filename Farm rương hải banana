@@ -1,0 +1,130 @@
+--[[
+    BANANA CHEST HUB v3 (TOTAL FIX)
+    Features: Auto Farm Chest (Sea 1, 2, 3), Server Hop, Anti-Admin, Floating Button
+]]
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- === HỆ THỐNG BIẾN TOÀN CỤC ===
+_G_AutoChest = false
+_G_Speed = 200
+local Player = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+
+-- === TẠO NÚT TRÒN (FLOATING BUTTON) ===
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local ToggleBtn = Instance.new("ImageButton", ScreenGui)
+local Corner = Instance.new("UICorner", ToggleBtn)
+
+ToggleBtn.Name = "BananaButton"
+ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
+ToggleBtn.Image = "rbxassetid://6031289435" -- Hình tròn
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+ToggleBtn.Draggable = true
+Corner.CornerRadius = UDim.new(1, 0)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    local MainFrame = game:GetService("CoreGui").RayfieldGui.Main
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- === HÀM SERVER HOP ===
+local function serverHop()
+    local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    local success, res = pcall(function() return HttpService:JSONDecode(game:HttpGet(Api)) end)
+    if success then
+        for _, v in pairs(res.data) do
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, Player)
+                return
+            end
+        end
+    end
+end
+
+-- === HÀM BAY ĐẾN RƯƠNG (SMOOTH TWEEN) ===
+local function flyTo(targetCFrame)
+    local char = Player.Character or Player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart", 10)
+    if not root or not _G_AutoChest then return end
+
+    local distance = (root.Position - targetCFrame.p).Magnitude
+    local tween = TweenService:Create(root, TweenInfo.new(distance / _G_Speed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- === KHỞI TẠO MENU ===
+local Window = Rayfield:CreateWindow({
+   Name = "BANANA CHEST HUB 🍌",
+   LoadingTitle = "Đang khởi chạy...",
+   LoadingSubtitle = "Fix Bug & Anti-Admin Active",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local MainTab = Window:CreateTab("Tự động", 4483362458)
+
+MainTab:CreateToggle({
+   Name = "Auto Farm Rương (Sea 1, 2, 3)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G_AutoChest = Value
+      if Value then
+          spawn(function()
+              while _G_AutoChest do
+                  local hasChest = false
+                  for _, v in pairs(game.Workspace:GetDescendants()) do
+                      if not _G_AutoChest then break end
+                      if v:IsA("TouchTransmitter") and v.Parent.Name:find("Chest") then
+                          hasChest = true
+                          flyTo(v.Parent.CFrame * CFrame.new(0, 3, 0))
+                          task.wait(0.2)
+                      end
+                  end
+                  if not hasChest then
+                      Rayfield:Notify({Title = "Hết rương", Content = "Đang đổi server để farm tiếp...", Duration = 3})
+                      serverHop()
+                      break
+                  end
+                  task.wait(1)
+              end
+          end)
+      end
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "Chuyển Server ngay",
+   Callback = function() serverHop() end,
+})
+
+local ConfigTab = Window:CreateTab("Cài đặt", 4483362458)
+
+ConfigTab:CreateSlider({
+   Name = "Tốc độ bay",
+   Range = {100, 350},
+   Increment = 10,
+   CurrentValue = 200,
+   Callback = function(Value) _G_Speed = Value end,
+})
+
+-- === HỆ THỐNG BẢO VỆ (CHẠY NGẦM) ===
+spawn(function()
+    while task.wait(3) do
+        -- 1. Anti-Admin
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p:GetRankInGroup(2830050) >= 250 or p.Name:find("Admin") or p.Name:find("Mod") then
+                serverHop()
+            end
+        end
+        -- 2. Anti-AFK
+        local VU = game:GetService("VirtualUser")
+        VU:CaptureController()
+        VU:ClickButton2(Vector2.new())
+    end
+end)
+
+Rayfield:Notify({Title = "Sẵn sàng!", Content = "Dùng nút tròn màu vàng để ẩn/hiện bảng điều khiển.", Duration = 5})
