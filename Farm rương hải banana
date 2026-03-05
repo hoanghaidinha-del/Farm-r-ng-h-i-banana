@@ -1,20 +1,32 @@
 --[[
     👑 TÁC GIẢ: HẢI8A
-    🍌 BANANA HUB - FULL VERSION (SEA 1, 2, 3)
-    🚀 KEY VĨNH VIỄN: haidz | 🔐 LOCK: 1 ACCOUNT ONLY
+    🍌 BANANA HUB - FULL OPTION (FARM + ANTI ADMIN + SERVER STATS)
+    🚀 KEY VĨNH VIỄN: haidz | 🔐 LOCK: 1 ACCOUNT
 ]]
 
 -- ================= HỆ THỐNG XÁC THỰC =================
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local Valid_Key = "haidz"
--- Khóa theo tài khoản người chạy (Lần đầu bạn chạy nó sẽ nhận ID của bạn)
-local Allowed_User = Player.UserId 
+local Allowed_User = Player.UserId -- Khóa theo ID tài khoản của bạn
 
--- ================= CÁC BIẾN TOÀN CỤC =================
+-- ================= BIẾN TOÀN CỤC =================
 getgenv().AutoFarm = false
 getgenv().TweenSpeed = 300
 getgenv().AntiAdmin = true
+getgenv().AntiAFK = true
+
+-- ================= HỆ THỐNG ANTI ADMIN =================
+Players.PlayerAdded:Connect(function(plr)
+    if getgenv().AntiAdmin then
+        local Admins = {"admin", "mod", "owner", "staff", "creator", "tester"}
+        for _, word in pairs(Admins) do
+            if plr.Name:lower():find(word) or (plr:GetRankInGroup(game.CreatorId) and plr:GetRankInGroup(game.CreatorId) > 100) then
+                Player:Kick("🛡️ BANANA HUB: Phát hiện ADMIN ("..plr.Name..")! Đã thoát để bảo vệ bạn.")
+            end
+        end
+    end
+end)
 
 -- ================= HÀM QUÉT DỮ LIỆU SERVER =================
 local function GetServerData()
@@ -23,7 +35,6 @@ local function GetServerData()
     local bosses = {}
     local currentIsland = "Đang quét..."
 
-    -- Quét rương & Trái cây
     for _, v in pairs(workspace:GetDescendants()) do
         if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
             chests = chests + 1
@@ -33,36 +44,33 @@ local function GetServerData()
         end
     end
 
-    -- Quét Boss (Blox Fruits logic)
     local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
     for _, npc in pairs(enemyFolder:GetChildren()) do
         if npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 then
-            if npc.Humanoid.MaxHealth >= 50000 or npc:FindFirstChild("BossLabel") then
-                if not table.find(bosses, npc.Name) then table.insert(bosses, npc.Name) end
+            if npc.Humanoid.MaxHealth >= 50000 then
+                table.insert(bosses, npc.Name)
             end
         end
     end
 
-    -- Xác định Đảo
-    local locations = workspace:FindFirstChild("Locations")
-    if locations and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        local myPos = Player.Character.HumanoidRootPart.Position
-        local minDist = math.huge
-        for _, island in pairs(locations:GetChildren()) do
-            local d = (myPos - island.Position).Magnitude
-            if d < minDist then minDist = d; currentIsland = island.Name end
-        end
-    end
-
-    return chests, fruit, bosses, currentIsland
+    return chests, fruit, bosses
 end
 
 -- ================= GIAO DIỆN & TÍNH NĂNG =================
 function LaunchBananaHub()
     local RunService = game:GetService("RunService")
     local TweenService = game:GetService("TweenService")
-    
-    -- [1. AUTO NOCLIP SIÊU CẤP]
+    local VirtualUser = game:GetService("VirtualUser")
+
+    -- [1. ANTI AFK]
+    Player.Idled:Connect(function()
+        if getgenv().AntiAFK then
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end
+    end)
+
+    -- [2. AUTO NOCLIP]
     RunService.Stepped:Connect(function()
         if getgenv().AutoFarm and Player.Character then
             for _, v in pairs(Player.Character:GetDescendants()) do
@@ -71,7 +79,7 @@ function LaunchBananaHub()
         end
     end)
 
-    -- [2. GIAO DIỆN CHÍNH]
+    -- [3. GIAO DIỆN UI]
     if game.CoreGui:FindFirstChild("Hai8aHub") then game.CoreGui.Hai8aHub:Destroy() end
     local Gui = Instance.new("ScreenGui", game.CoreGui); Gui.Name = "Hai8aHub"
     local Main = Instance.new("Frame", Gui)
@@ -81,12 +89,11 @@ function LaunchBananaHub()
     Instance.new("UICorner", Main)
     Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
-    -- Sidebar & Tab System
+    -- Sidebar
     local Sidebar = Instance.new("Frame", Main)
     Sidebar.Size = UDim2.new(0, 140, 1, 0)
     Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Instance.new("UICorner", Sidebar)
-    
     local Title = Instance.new("TextLabel", Sidebar)
     Title.Size = UDim2.new(1,0,0,50); Title.Text = "HẢI8A 🍌"; Title.TextColor3 = Color3.new(1, 0.84, 0); Title.Font = "GothamBold"; Title.TextSize = 22; Title.BackgroundTransparency = 1
 
@@ -94,7 +101,7 @@ function LaunchBananaHub()
     Container.Position = UDim2.new(0, 150, 0, 10); Container.Size = UDim2.new(1, -160, 1, -20); Container.BackgroundTransparency = 1
 
     local tabs = {}
-    local function AddTab(name, icon)
+    local function AddTab(name)
         local Page = Instance.new("ScrollingFrame", Container)
         Page.Size = UDim2.new(1,0,1,0); Page.Visible = false; Page.BackgroundTransparency = 1; Page.ScrollBarThickness = 0
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
@@ -111,45 +118,58 @@ function LaunchBananaHub()
         return Page
     end
 
-    local FarmPage = AddTab("Farm", ""); FarmPage.Visible = true; tabs["Farm"].B.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-    local ServerPage = AddTab("Server", "")
+    local FarmPage = AddTab("Farm"); FarmPage.Visible = true; tabs["Farm"].B.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    local ServerPage = AddTab("Server")
 
-    -- [3. NỘI DUNG TAB FARM]
+    -- [4. NỘI DUNG TAB FARM]
     local ToggleFarm = Instance.new("TextButton", FarmPage)
-    ToggleFarm.Size = UDim2.new(1, 0, 0, 50); ToggleFarm.Text = "START AUTO FARM CHEST"; ToggleFarm.BackgroundColor3 = Color3.fromRGB(40,40,40); ToggleFarm.TextColor3 = Color3.new(1,1,1); ToggleFarm.Font = "GothamBold"
+    ToggleFarm.Size = UDim2.new(1, 0, 0, 50); ToggleFarm.Text = "AUTO FARM CHEST: OFF"
+    ToggleFarm.BackgroundColor3 = Color3.fromRGB(40,40,40); ToggleFarm.TextColor3 = Color3.new(1,1,1); ToggleFarm.Font = "GothamBold"
     Instance.new("UICorner", ToggleFarm)
 
     ToggleFarm.MouseButton1Click:Connect(function()
         getgenv().AutoFarm = not getgenv().AutoFarm
-        ToggleFarm.Text = getgenv().AutoFarm and "FARMING... (ON)" or "START AUTO FARM CHEST"
+        ToggleFarm.Text = "AUTO FARM CHEST: " .. (getgenv().AutoFarm and "ON" or "OFF")
         ToggleFarm.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40,40,40)
     end)
 
-    -- [4. NỘI DUNG TAB SERVER]
+    -- [5. NỘI DUNG TAB SERVER]
     local ServerLabel = Instance.new("TextLabel", ServerPage)
-    ServerLabel.Size = UDim2.new(1,0,1,0); ServerLabel.BackgroundTransparency = 1; ServerLabel.TextColor3 = Color3.new(1,1,1); ServerLabel.Font = "Gotham"; ServerLabel.TextSize = 14; ServerLabel.TextXAlignment = "Left"; ServerLabel.TextYAlignment = "Top"
+    ServerLabel.Size = UDim2.new(1,0,1,0); ServerLabel.BackgroundTransparency = 1; ServerLabel.TextColor3 = Color3.new(1,1,1); ServerLabel.Font = "Gotham"; ServerLabel.TextSize = 13; ServerLabel.TextXAlignment = "Left"; ServerLabel.TextYAlignment = "Top"
 
     task.spawn(function()
         while task.wait(3) do
-            local c, f, b, i = GetServerData()
-            local bList = #b > 0 and table.concat(b, ", ") or "Đã chết hết"
-            ServerLabel.Text = string.format("🏝️ Đảo: %s\n\n👹 Boss hiện có:\n%s\n\n💰 Rương: %d\n🍎 Trái cây: %s\n\n🛡️ Admin Check: Đang quét...", i, bList, c, f)
+            local c, f, b = GetServerData()
+            ServerLabel.Text = string.format("👹 Boss hiện tại:\n• %s\n\n💰 Rương: %d\n🍎 Trái cây: %s\n\n🛡️ Anti-Admin: Đang bật\n⏳ Anti-AFK: Đang bật", (#b > 0 and table.concat(b, ", ") or "Đã hết"), c, f)
         end
     end)
 
-    -- [5. LOGIC DI CHUYỂN]
+    -- [6. LOGIC FARM RƯƠNG (FULL)]
     task.spawn(function()
-        while task.wait(0.5) do
+        while task.wait(0.1) do
             if getgenv().AutoFarm then
                 pcall(function()
                     for _, v in pairs(workspace:GetDescendants()) do
                         if not getgenv().AutoFarm then break end
                         if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
                             local root = Player.Character.HumanoidRootPart
-                            local dist = (root.Position - v.Position).Magnitude
-                            local tween = TweenService:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = v.CFrame + Vector3.new(0,3,0)})
-                            tween:Play(); tween.Completed:Wait()
-                            firetouchinterest(root, v, 0); firetouchinterest(root, v, 1); task.wait(0.1)
+                            local targetPos = v:IsA("BasePart") and v.CFrame or v:FindFirstChildWhichIsA("BasePart", true).CFrame
+                            
+                            -- Tween đến rương
+                            local dist = (root.Position - targetPos.Position).Magnitude
+                            local tween = TweenService:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetPos + Vector3.new(0,3,0)})
+                            tween:Play()
+                            tween.Completed:Wait()
+                            
+                            -- Nhặt rương
+                            firetouchinterest(root, v, 0)
+                            firetouchinterest(root, v, 1)
+                            
+                            -- Hỗ trợ ProximityPrompt (Rương đặc biệt)
+                            for _, p in pairs(v:GetDescendants()) do
+                                if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
+                            end
+                            task.wait(0.1)
                         end
                     end
                 end)
@@ -158,10 +178,9 @@ function LaunchBananaHub()
     end)
 end
 
--- ================= KHỞI CHẠY KIỂM TRA =================
+-- ================= KHỞI CHẠY =================
 if Player.UserId == Allowed_User then
-    print("Xác thực thành công!")
     LaunchBananaHub()
 else
-    Player:Kick("Hải8a Hub: Script này chỉ dành cho tài khoản đã đăng ký!")
+    Player:Kick("Hải8a Hub: Sai tài khoản đăng ký!")
 end
