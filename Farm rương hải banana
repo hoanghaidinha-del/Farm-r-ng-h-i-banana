@@ -1,9 +1,83 @@
 --[[ 
     👑 TÁC GIẢ: HẢI8A 
-    🍌 BANANA HUB - FINAL FIX (SEA 1, 2, 3)
+    🍌 BANANA HUB - FINAL FIX (RE-SPAWN FIX)
     🚀 KEY VĨNH VIỄN: haidz
 ]]
 
+-- ================= KHAI BÁO DỊCH VỤ =================
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+
+-- ================= HỆ THỐNG KEY & LƯU KEY =================
+local KEY_FILE = "BananaHub_Config.json"
+local VALID_KEY = "haidz"
+
+local function SaveKey(key)
+    local data = {SavedKey = key, Owner = Player.Name}
+    writefile(KEY_FILE, HttpService:JSONEncode(data))
+end
+
+local function CheckSavedKey()
+    if isfile(KEY_FILE) then
+        local success, data = pcall(function() return HttpService:JSONDecode(readfile(KEY_FILE)) end)
+        if success and data.SavedKey == VALID_KEY and data.Owner == Player.Name then
+            return true
+        end
+    end
+    return false
+end
+
+if not CheckSavedKey() then
+    local KeyGui = Instance.new("ScreenGui", game.CoreGui)
+    KeyGui.Name = "BananaKeySys"
+    
+    local KeyMain = Instance.new("Frame", KeyGui)
+    KeyMain.Size = UDim2.new(0, 320, 0, 180)
+    KeyMain.Position = UDim2.new(0.5, -160, 0.5, -90)
+    KeyMain.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Instance.new("UICorner", KeyMain)
+    Instance.new("UIStroke", KeyMain).Color = Color3.fromRGB(255, 215, 0)
+
+    local KeyTitle = Instance.new("TextLabel", KeyMain)
+    KeyTitle.Size = UDim2.new(1, 0, 0, 50)
+    KeyTitle.Text = "NHẬP KEY ĐỂ TIẾP TỤC 🍌"
+    KeyTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+    KeyTitle.Font = Enum.Font.GothamBold
+    KeyTitle.BackgroundTransparency = 1
+
+    local KeyInput = Instance.new("TextBox", KeyMain)
+    KeyInput.Size = UDim2.new(0.8, 0, 0, 40)
+    KeyInput.Position = UDim2.new(0.1, 0, 0.35, 0)
+    KeyInput.PlaceholderText = "Nhập key tại đây..."
+    KeyInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    KeyInput.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", KeyInput)
+
+    local KeyBtn = Instance.new("TextButton", KeyMain)
+    KeyBtn.Size = UDim2.new(0.8, 0, 0, 40)
+    KeyBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
+    KeyBtn.Text = "XÁC NHẬN"
+    KeyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    KeyBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", KeyBtn)
+
+    KeyBtn.MouseButton1Click:Connect(function()
+        if KeyInput.Text == VALID_KEY then
+            SaveKey(KeyInput.Text)
+            KeyGui:Destroy()
+        else
+            KeyInput.Text = ""
+            KeyInput.PlaceholderText = "SAI KEY! VUI LÒNG THỬ LẠI"
+        end
+    end)
+    repeat task.wait() until not game.CoreGui:FindFirstChild("BananaKeySys")
+end
+
+-- ================= KIỂM TRA GUI CŨ =================
 if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
@@ -15,11 +89,6 @@ getgenv().TweenSpeed = 300
 getgenv().AntiAdmin = true
 getgenv().AntiAFK = true
 
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
-
 -- ================= ANTI-AFK =================
 Player.Idled:Connect(function()
     if getgenv().AntiAFK then
@@ -28,13 +97,14 @@ Player.Idled:Connect(function()
     end
 end)
 
--- ================= HÀM DI CHUYỂN =================
+-- ================= HÀM DI CHUYỂN (ĐÃ FIX CHARACTER) =================
 local function SafeMove(targetCFrame)
-    local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    local char = Player.Character or Player.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart", 5)
     if not root then return end
 
     -- Noclip xuyên mọi thứ
-    for _, v in pairs(Player.Character:GetDescendants()) do
+    for _, v in pairs(char:GetDescendants()) do
         if v:IsA("BasePart") then v.CanCollide = false end
     end
 
@@ -50,19 +120,18 @@ local function SafeMove(targetCFrame)
     end
 end
 
--- ================= LOGIC FARM (QUÉT MỌI LOẠI RƯƠNG) =================
+-- ================= LOGIC FARM =================
 task.spawn(function()
     while task.wait(0.3) do
         if getgenv().AutoFarm then
             pcall(function()
-                local Root = Player.Character:FindFirstChild("HumanoidRootPart")
+                local char = Player.Character or Player.CharacterAdded:Wait()
+                local Root = char:WaitForChild("HumanoidRootPart", 5)
                 if not Root then return end
 
                 local AllChests = {}
-                -- Quét rộng hơn để không bỏ sót bất kỳ rương nào ở Sea 1, 2, 3
                 for _, v in pairs(game.Workspace:GetDescendants()) do
                     if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
-                        -- Loại bỏ rương đã mở (thường rương mở rồi sẽ bị xóa hoặc có tên khác, nhưng ta check kĩ)
                         if v.Parent and v.Parent.Name ~= "Opened" then
                             table.insert(AllChests, {
                                 Part = v,
@@ -72,28 +141,26 @@ task.spawn(function()
                     end
                 end
 
-                -- SẮP XẾP ƯU TIÊN GẦN NHẤT
                 table.sort(AllChests, function(a, b) return a.Dist < b.Dist end)
 
-                -- Bắt đầu hành trình nhặt rương
                 for i = 1, #AllChests do
                     if not getgenv().AutoFarm then break end
                     local target = AllChests[i].Part
                     
                     if target and target.Parent then
-                        -- Bay đến rương
                         SafeMove(target.CFrame + Vector3.new(0, 2, 0))
                         
-                        -- Chạm rương (Dùng cả 2 cách để chắc chắn server nhận)
-                        firetouchinterest(Root, target, 0)
-                        task.wait()
-                        firetouchinterest(Root, target, 1)
+                        -- Lấy lại Root mới nhất sau khi SafeMove
+                        local currentRoot = char:FindFirstChild("HumanoidRootPart")
+                        if currentRoot then
+                            firetouchinterest(currentRoot, target, 0)
+                            task.wait()
+                            firetouchinterest(currentRoot, target, 1)
+                        end
                         
-                        -- Nhấn giữ E (Cho Sea 2, 3 và rương hiếm)
                         local prompt = target:FindFirstChildOfClass("ProximityPrompt") or target.Parent:FindFirstChildOfClass("ProximityPrompt")
                         if prompt then fireproximityprompt(prompt) end
-                        
-                        task.wait(0.1) -- Nghỉ cực ngắn để chuyển rương tiếp theo
+                        task.wait(0.1)
                     end
                 end
             end)
@@ -101,10 +168,10 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN (ĐẦY ĐỦ CHỨC NĂNG) =================
+-- ================= GIAO DIỆN =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
-Gui.ResetOnSpawn = false
+Gui.ResetOnSpawn = false -- Quan trọng: Không mất UI khi chết
 
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 480, 0, 320)
@@ -113,12 +180,13 @@ Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Instance.new("UICorner", Main)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
--- Sidebar
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 140, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Instance.new("UICorner", Sidebar)
-Instance.new("UIListLayout", Sidebar).HorizontalAlignment = Enum.HorizontalAlignment.Center
+local List = Instance.new("UIListLayout", Sidebar)
+List.HorizontalAlignment = Enum.HorizontalAlignment.Center
+List.Padding = UDim.new(0, 5)
 
 local Title = Instance.new("TextLabel", Sidebar)
 Title.Size = UDim2.new(1, 0, 0, 60)
@@ -135,7 +203,7 @@ PageContainer.BackgroundTransparency = 1
 
 local function CreateTab(name, active)
     local Page = Instance.new("ScrollingFrame", PageContainer)
-    Page.Size = UDim2.new(1, 1, 1, 1)
+    Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = active
     Page.ScrollBarThickness = 0
@@ -163,7 +231,29 @@ local FarmTab = CreateTab("Farm", true)
 local MethodTab = CreateTab("Methods", false)
 local SettingsTab = CreateTab("Settings", false)
 
--- TAB FARM
+-- PHẦN XEM SỐ LƯỢNG RƯƠNG
+local ChestCountLabel = Instance.new("TextLabel", FarmTab)
+ChestCountLabel.Size = UDim2.new(1, 0, 0, 30)
+ChestCountLabel.BackgroundTransparency = 1
+ChestCountLabel.Text = "Đang quét rương..."
+ChestCountLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+ChestCountLabel.Font = Enum.Font.GothamBold
+ChestCountLabel.TextSize = 16
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local count = 0
+        for _, v in pairs(game.Workspace:GetDescendants()) do
+            if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
+                if v.Parent and v.Parent.Name ~= "Opened" then
+                    count = count + 1
+                end
+            end
+        end
+        ChestCountLabel.Text = "Rương hiện có: " .. tostring(count)
+    end
+end)
+
 local function AddToggle(parent, text, default, callback)
     local b = Instance.new("TextButton", parent)
     b.Size = UDim2.new(1, 0, 0, 45)
@@ -183,7 +273,6 @@ end
 
 AddToggle(FarmTab, "Auto Farm Chest", false, function(v) getgenv().AutoFarm = v end)
 
--- TAB METHODS (CHỈNH CÁCH BAY & TỐC ĐỘ)
 local function AddMethod(name)
     local b = Instance.new("TextButton", MethodTab)
     b.Size = UDim2.new(1, 0, 0, 40)
@@ -212,11 +301,9 @@ SpeedInput.Font = Enum.Font.GothamBold
 Instance.new("UICorner", SpeedInput)
 SpeedInput.FocusLost:Connect(function() getgenv().TweenSpeed = tonumber(SpeedInput.Text) or 300 end)
 
--- TAB SETTINGS
 AddToggle(SettingsTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
 AddToggle(SettingsTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
 
--- Nút nổi 🍌
 local Icon = Instance.new("TextButton", Gui)
 Icon.Size = UDim2.new(0, 50, 0, 50)
 Icon.Position = UDim2.new(0, 10, 0.5, 0)
@@ -226,7 +313,7 @@ Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
 Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Kéo thả UI
+-- Kéo thả UI (Đã fix lỗi kéo thả sau khi Reset)
 local dragging, dragStart, startPos
 Main.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = Main.Position end end)
 UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
