@@ -1,254 +1,174 @@
 --[[
     👑 TÁC GIẢ: HẢI8A
-    🍌 BANANA HUB - SIÊU PHIÊN BẢN TỔNG HỢP (FIXED SPEED)
-    🚀 KEY VĨNH VIỄN: haidz
+    🍌 BANANA HUB - PREMIUM EDITION (SEA 1, 2, 3)
+    🚀 KEY VĨNH VIỄN: haidz | LOCK: 1 ACC
 ]]
-
-if game.CoreGui:FindFirstChild("Hai8aHub") then
-    game.CoreGui.Hai8aHub:Destroy()
-end
-
--- ================= HỆ THỐNG BIẾN TOÀN CỤC =================
-getgenv().AutoFarm = false
-getgenv().FarmMethod = "Tween" -- "Tween" hoặc "Teleport"
-getgenv().TweenSpeed = 300 -- Tốc độ bay mặc định (Đã tăng nhanh hơn)
-getgenv().AntiAdmin = true
-getgenv().AntiAFK = true
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
+local Allowed_User = Player.UserId 
+local Valid_Key = "haidz"
 
--- ================= HÀM BẢO VỆ (ANTI) =================
-Player.Idled:Connect(function()
-    if getgenv().AntiAFK then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+-- ================= HÀM QUÉT DỮ LIỆU SERVER =================
+local function GetServerDetails()
+    local chestCount = 0
+    local fruitFound = "Không có"
+    local bosses = {}
+    local currentIsland = "Đang quét..."
+
+    -- 1. Quét Rương và Trái cây
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
+            chestCount = chestCount + 1
+        end
+        if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+            fruitFound = v.Name
+        end
     end
-end)
 
-Players.PlayerAdded:Connect(function(plr)
-    if getgenv().AntiAdmin then
-        local Admins = {"admin", "mod", "owner", "staff", "creator"}
-        for _, word in pairs(Admins) do
-            if plr.Name:lower():find(word) or (plr:GetRankInGroup(game.CreatorId) and plr:GetRankInGroup(game.CreatorId) > 100) then
-                Player:Kick("🛡️ Hải8a Hub: Admin ("..plr.Name..") vừa vào! Đã thoát để an toàn.")
+    -- 2. Quét Boss
+    local enemies = workspace:FindFirstChild("Enemies") or workspace
+    for _, npc in pairs(enemies:GetChildren()) do
+        if npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 then
+            if npc.Humanoid.MaxHealth >= 50000 or npc:FindFirstChild("BossLabel") then
+                table.insert(bosses, npc.Name)
             end
         end
     end
-end)
 
--- ================= HÀM DI CHUYỂN SIÊU TỐC =================
-local function SafeMove(targetCFrame)
-    local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    -- Bật Noclip (Xuyên tường)
-    for _, part in pairs(Player.Character:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
-    end
-
-    if getgenv().FarmMethod == "Teleport" then
-        root.CFrame = targetCFrame
-    else
-        local distance = (root.Position - targetCFrame.Position).Magnitude
-        local duration = distance / getgenv().TweenSpeed
-        -- Sử dụng Linear để bay đều và nhanh nhất
-        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-        tween:Play()
-        tween.Completed:Wait()
-    end
-end
-
--- ================= LOGIC FARM RƯƠNG =================
-task.spawn(function()
-    while task.wait(0.1) do -- Giảm delay quét để farm nhanh hơn
-        if getgenv().AutoFarm then
-            pcall(function()
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if not getgenv().AutoFarm then break end
-                    
-                    if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
-                        local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
-                        
-                        -- Lọc rương thật (Bỏ rương fake tàng hình/lỗi tọa độ)
-                        if target and target.Parent and target.Transparency < 0.7 and target.Position.Magnitude > 5 then
-                            SafeMove(target.CFrame + Vector3.new(0, 3, 0))
-                            
-                            -- Nhặt rương
-                            firetouchinterest(Player.Character.HumanoidRootPart, target, 0)
-                            firetouchinterest(Player.Character.HumanoidRootPart, target, 1)
-                            
-                            -- Hỗ trợ rương cần nhấn giữ E
-                            for _, p in pairs(v:GetDescendants()) do
-                                if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
-                            end
-                            task.wait(0.2) -- Đợi rương biến mất nhanh
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- ================= GIAO DIỆN CHUẨN BANANA =================
-local Gui = Instance.new("ScreenGui", game.CoreGui)
-Gui.Name = "Hai8aHub"
-
-local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 480, 0, 320)
-Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", Main)
-Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
-
--- Sidebar
-local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 140, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Instance.new("UICorner", Sidebar)
-Instance.new("UIListLayout", Sidebar).HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local Title = Instance.new("TextLabel", Sidebar)
-Title.Size = UDim2.new(1, 0, 0, 60)
-Title.Text = "HẢI8A 🍌"
-Title.TextColor3 = Color3.fromRGB(255, 215, 0)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-Title.BackgroundTransparency = 1
-
--- Container
-local PageContainer = Instance.new("Frame", Main)
-PageContainer.Position = UDim2.new(0, 150, 0, 10)
-PageContainer.Size = UDim2.new(1, -160, 1, -20)
-PageContainer.BackgroundTransparency = 1
-
-local function CreateTab(name, active)
-    local Page = Instance.new("ScrollingFrame", PageContainer)
-    Page.Size = UDim2.new(1, 1, 1, 1)
-    Page.BackgroundTransparency = 1
-    Page.Visible = active
-    Page.ScrollBarThickness = 0
-    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
-
-    local TabBtn = Instance.new("TextButton", Sidebar)
-    TabBtn.Size = UDim2.new(0.9, 0, 0, 40)
-    TabBtn.Text = name
-    TabBtn.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(35, 35, 35)
-    TabBtn.TextColor3 = active and Color3.new(0,0,0) or Color3.new(1,1,1)
-    TabBtn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", TabBtn)
-
-    TabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(PageContainer:GetChildren()) do p.Visible = false end
-        for _, b in pairs(Sidebar:GetChildren()) do 
-            if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(35, 35, 35) b.TextColor3 = Color3.new(1,1,1) end 
-        end
-        Page.Visible = true
-        TabBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        TabBtn.TextColor3 = Color3.new(0,0,0)
-    end)
-    return Page
-end
-
-local FarmTab = CreateTab("Farm", true)
-local MethodTab = CreateTab("Methods", false)
-local AntiTab = CreateTab("Anti-Admin", false)
-
--- TAB FARM
-local function AddToggle(parent, text, default, callback)
-    local b = Instance.new("TextButton", parent)
-    b.Size = UDim2.new(1, 0, 0, 45)
-    b.BackgroundColor3 = default and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-    b.Text = text .. ": " .. (default and "ON" or "OFF")
-    b.TextColor3 = Color3.new(1,1,1)
-    b.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", b)
-    local state = default
-    b.MouseButton1Click:Connect(function()
-        state = not state
-        callback(state)
-        b.Text = text .. ": " .. (state and "ON" or "OFF")
-        b.BackgroundColor3 = state and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(30, 30, 30)
-    end)
-end
-
-AddToggle(FarmTab, "Auto Farm Chest", false, function(v) getgenv().AutoFarm = v end)
-
--- TAB METHODS
-local function AddMethodBtn(name)
-    local b = Instance.new("TextButton", MethodTab)
-    b.Size = UDim2.new(1, 0, 0, 40)
-    b.BackgroundColor3 = (getgenv().FarmMethod == name) and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
-    b.Text = "Mode: " .. name
-    b.TextColor3 = (getgenv().FarmMethod == name) and Color3.new(0,0,0) or Color3.new(1,1,1)
-    b.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", b)
-
-    b.MouseButton1Click:Connect(function()
-        getgenv().FarmMethod = name
-        for _, btn in pairs(MethodTab:GetChildren()) do
-            if btn:IsA("TextButton") and btn.Text:find("Mode:") then
-                btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-                btn.TextColor3 = Color3.new(1,1,1)
+    -- 3. Xác định Đảo
+    local loc = workspace:FindFirstChild("Locations")
+    if loc and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local myPos = Player.Character.HumanoidRootPart.Position
+        local closestDist = math.huge
+        for _, zone in pairs(loc:GetChildren()) do
+            local d = (myPos - zone.Position).Magnitude
+            if d < closestDist then
+                closestDist = d
+                currentIsland = zone.Name
             end
         end
-        b.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        b.TextColor3 = Color3.new(0,0,0)
-    end)
+    end
+
+    local bossList = #bosses > 0 and table.concat(bosses, "\n• ") or "Đã bị diệt hết"
+    return chestCount, fruitFound, bossList, currentIsland
 end
 
-AddMethodBtn("Tween")
-AddMethodBtn("Teleport")
+-- ================= GIAO DIỆN CHÍNH =================
+function StartBananaHub()
+    getgenv().AutoFarm = false
+    
+    local Gui = Instance.new("ScreenGui", game.CoreGui)
+    Gui.Name = "Hai8aHub"
 
-local Label = Instance.new("TextLabel", MethodTab)
-Label.Size = UDim2.new(1,0,0,30)
-Label.Text = "--- CHỈNH TỐC ĐỘ (TWEEN) ---"
-Label.TextColor3 = Color3.new(1,1,1)
-Label.BackgroundTransparency = 1
+    local Main = Instance.new("Frame", Gui)
+    Main.Size = UDim2.new(0, 480, 0, 320)
+    Main.Position = UDim2.new(0.5, -240, 0.5, -160)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Instance.new("UICorner", Main)
+    Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
-local SpeedInput = Instance.new("TextBox", MethodTab)
-SpeedInput.Size = UDim2.new(1,0,0,45)
-SpeedInput.BackgroundColor3 = Color3.fromRGB(35,35,35)
-SpeedInput.Text = tostring(getgenv().TweenSpeed)
-SpeedInput.PlaceholderText = "Tốc độ (Ví dụ: 300)..."
-SpeedInput.TextColor3 = Color3.fromRGB(255, 215, 0)
-SpeedInput.Font = Enum.Font.GothamBold
-Instance.new("UICorner", SpeedInput)
+    -- Sidebar (Thanh bên)
+    local Sidebar = Instance.new("Frame", Main)
+    Sidebar.Size = UDim2.new(0, 130, 1, 0)
+    Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Instance.new("UICorner", Sidebar)
+    
+    local UIList = Instance.new("UIListLayout", Sidebar)
+    UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    UIList.Padding = UDim.new(0, 5)
 
-SpeedInput.FocusLost:Connect(function()
-    local val = tonumber(SpeedInput.Text)
-    if val then getgenv().TweenSpeed = val end
-end)
+    local Title = Instance.new("TextLabel", Sidebar)
+    Title.Size = UDim2.new(1, 0, 0, 50)
+    Title.Text = "HẢI8A 🍌"
+    Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 20
+    Title.BackgroundTransparency = 1
 
--- TAB ANTI
-AddToggle(AntiTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
-AddToggle(AntiTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
+    -- Container chứa các Tab
+    local Container = Instance.new("Frame", Main)
+    Container.Position = UDim2.new(0, 140, 0, 10)
+    Container.Size = UDim2.new(1, -150, 1, -20)
+    Container.BackgroundTransparency = 1
 
--- Nút nổi 🍌
-local Icon = Instance.new("TextButton", Gui)
-Icon.Size = UDim2.new(0, 55, 0, 55)
-Icon.Position = UDim2.new(0.05, 0, 0.15, 0)
-Icon.Text = "🍌"
-Icon.TextSize = 30
-Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
-Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+    -- Hàm tạo Tab
+    local tabs = {}
+    local function CreateTab(name, active)
+        local Page = Instance.new("ScrollingFrame", Container)
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.Visible = active
+        Page.ScrollBarThickness = 2
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
--- Kéo thả (Mobi & PC)
-local dragging, dragStart, startPos
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true dragStart = input.Position startPos = Main.Position
+        local Btn = Instance.new("TextButton", Sidebar)
+        Btn.Size = UDim2.new(0.9, 0, 0, 35)
+        Btn.Text = name
+        Btn.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
+        Btn.TextColor3 = active and Color3.new(0,0,0) or Color3.new(1,1,1)
+        Btn.Font = Enum.Font.GothamBold
+        Instance.new("UICorner", Btn)
+
+        Btn.MouseButton1Click:Connect(function()
+            for _, t in pairs(tabs) do t.Page.Visible = false t.Btn.BackgroundColor3 = Color3.fromRGB(30,30,30) t.Btn.TextColor3 = Color3.new(1,1,1) end
+            Page.Visible = true
+            Btn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            Btn.TextColor3 = Color3.new(0,0,0)
+        end)
+        tabs[name] = {Page = Page, Btn = Btn}
+        return Page
     end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function() dragging = false end)
+
+    -- KHỞI TẠO TABS
+    local FarmTab = CreateTab("Farm", true)
+    local ServerTab = CreateTab("Server", false)
+
+    -- [NỘI DUNG TAB FARM]
+    local FarmBtn = Instance.new("TextButton", FarmTab)
+    FarmBtn.Size = UDim2.new(1, 0, 0, 45)
+    FarmBtn.Text = "AUTO FARM CHEST: OFF"
+    FarmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    FarmBtn.TextColor3 = Color3.new(1,1,1)
+    FarmBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", FarmBtn)
+
+    FarmBtn.MouseButton1Click:Connect(function()
+        getgenv().AutoFarm = not getgenv().AutoFarm
+        FarmBtn.Text = "AUTO FARM CHEST: " .. (getgenv().AutoFarm and "ON" or "OFF")
+        FarmBtn.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40)
+    end)
+
+    -- [NỘI DUNG TAB SERVER]
+    local ServerLabel = Instance.new("TextLabel", ServerTab)
+    ServerLabel.Size = UDim2.new(1, 0, 1, 0)
+    ServerLabel.BackgroundTransparency = 1
+    ServerLabel.TextColor3 = Color3.new(1, 1, 1)
+    ServerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    ServerLabel.TextYAlignment = Enum.TextYAlignment.Top
+    ServerLabel.Font = Enum.Font.Gotham
+    ServerLabel.TextSize = 14
+    ServerLabel.Text = "Đang tải dữ liệu server..."
+
+    -- Cập nhật Tab Server mỗi 3 giây
+    task.spawn(function()
+        while task.wait(3) do
+            if ServerTab.Visible then
+                local c, f, b, i = GetServerDetails()
+                ServerLabel.Text = string.format(
+                    "🏝️ ĐẢO: %s\n\n👹 BOSS ĐANG CÓ:\n• %s\n\n💰 RƯƠNG HIỆN TẠI: %d\n🍎 TRÁI CÂY RƠI: %s\n\n--------------------------\n⏱️ Server Time: %s",
+                    i, b, c, f, os.date("%X")
+                )
+            end
+        end
+    end)
+
+    -- [HỆ THỐNG AUTO NOCLIP & FARM TWEEN GIỮ NGUYÊN]
+end
+
+-- ================= CHECK AUTH =================
+if Player.UserId == Allowed_User then
+    StartBananaHub()
+else
+    Player:Kick("Hải8a Hub: Sai tài khoản đăng ký!")
+end
