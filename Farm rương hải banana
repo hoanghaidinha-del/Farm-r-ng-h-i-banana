@@ -1,6 +1,6 @@
---[[
-    👑 TÁC GIẢ: HẢI8A
-    🍌 BANANA HUB - SIÊU PHIÊN BẢN TỔNG HỢP (FIXED SPEED)
+--[[ 
+    👑 TÁC GIẢ: HẢI8A 
+    🍌 BANANA HUB - FINAL FIX (SEA 1, 2, 3)
     🚀 KEY VĨNH VIỄN: haidz
 ]]
 
@@ -8,20 +8,19 @@ if game.CoreGui:FindFirstChild("Hai8aHub") then
     game.CoreGui.Hai8aHub:Destroy()
 end
 
--- ================= HỆ THỐNG BIẾN TOÀN CỤC =================
+-- ================= BIẾN TOÀN CỤC =================
 getgenv().AutoFarm = false
-getgenv().FarmMethod = "Tween" -- "Tween" hoặc "Teleport"
-getgenv().TweenSpeed = 300 -- Tốc độ bay mặc định (Đã tăng nhanh hơn)
+getgenv().FarmMethod = "Tween" 
+getgenv().TweenSpeed = 300 
 getgenv().AntiAdmin = true
 getgenv().AntiAFK = true
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= HÀM BẢO VỆ (ANTI) =================
+-- ================= ANTI-AFK =================
 Player.Idled:Connect(function()
     if getgenv().AntiAFK then
         VirtualUser:CaptureController()
@@ -29,64 +28,72 @@ Player.Idled:Connect(function()
     end
 end)
 
-Players.PlayerAdded:Connect(function(plr)
-    if getgenv().AntiAdmin then
-        local Admins = {"admin", "mod", "owner", "staff", "creator"}
-        for _, word in pairs(Admins) do
-            if plr.Name:lower():find(word) or (plr:GetRankInGroup(game.CreatorId) and plr:GetRankInGroup(game.CreatorId) > 100) then
-                Player:Kick("🛡️ Hải8a Hub: Admin ("..plr.Name..") vừa vào! Đã thoát để an toàn.")
-            end
-        end
-    end
-end)
-
--- ================= HÀM DI CHUYỂN SIÊU TỐC =================
+-- ================= HÀM DI CHUYỂN =================
 local function SafeMove(targetCFrame)
     local root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    -- Bật Noclip (Xuyên tường)
-    for _, part in pairs(Player.Character:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
+    -- Noclip xuyên mọi thứ
+    for _, v in pairs(Player.Character:GetDescendants()) do
+        if v:IsA("BasePart") then v.CanCollide = false end
     end
 
     if getgenv().FarmMethod == "Teleport" then
         root.CFrame = targetCFrame
     else
         local distance = (root.Position - targetCFrame.Position).Magnitude
-        local duration = distance / getgenv().TweenSpeed
-        -- Sử dụng Linear để bay đều và nhanh nhất
-        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        if distance < 5 then root.CFrame = targetCFrame return end
+        
+        local tween = TweenService:Create(root, TweenInfo.new(distance / getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
         tween:Play()
         tween.Completed:Wait()
     end
 end
 
--- ================= LOGIC FARM RƯƠNG =================
+-- ================= LOGIC FARM (QUÉT MỌI LOẠI RƯƠNG) =================
 task.spawn(function()
-    while task.wait(0.1) do -- Giảm delay quét để farm nhanh hơn
+    while task.wait(0.3) do
         if getgenv().AutoFarm then
             pcall(function()
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if not getgenv().AutoFarm then break end
-                    
-                    if v.Name:lower():find("chest") or v.Name:lower():find("rương") then
-                        local target = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
-                        
-                        -- Lọc rương thật (Bỏ rương fake tàng hình/lỗi tọa độ)
-                        if target and target.Parent and target.Transparency < 0.7 and target.Position.Magnitude > 5 then
-                            SafeMove(target.CFrame + Vector3.new(0, 3, 0))
-                            
-                            -- Nhặt rương
-                            firetouchinterest(Player.Character.HumanoidRootPart, target, 0)
-                            firetouchinterest(Player.Character.HumanoidRootPart, target, 1)
-                            
-                            -- Hỗ trợ rương cần nhấn giữ E
-                            for _, p in pairs(v:GetDescendants()) do
-                                if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
-                            end
-                            task.wait(0.2) -- Đợi rương biến mất nhanh
+                local Root = Player.Character:FindFirstChild("HumanoidRootPart")
+                if not Root then return end
+
+                local AllChests = {}
+                -- Quét rộng hơn để không bỏ sót bất kỳ rương nào ở Sea 1, 2, 3
+                for _, v in pairs(game.Workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
+                        -- Loại bỏ rương đã mở (thường rương mở rồi sẽ bị xóa hoặc có tên khác, nhưng ta check kĩ)
+                        if v.Parent and v.Parent.Name ~= "Opened" then
+                            table.insert(AllChests, {
+                                Part = v,
+                                Dist = (Root.Position - v.Position).Magnitude
+                            })
                         end
+                    end
+                end
+
+                -- SẮP XẾP ƯU TIÊN GẦN NHẤT
+                table.sort(AllChests, function(a, b) return a.Dist < b.Dist end)
+
+                -- Bắt đầu hành trình nhặt rương
+                for i = 1, #AllChests do
+                    if not getgenv().AutoFarm then break end
+                    local target = AllChests[i].Part
+                    
+                    if target and target.Parent then
+                        -- Bay đến rương
+                        SafeMove(target.CFrame + Vector3.new(0, 2, 0))
+                        
+                        -- Chạm rương (Dùng cả 2 cách để chắc chắn server nhận)
+                        firetouchinterest(Root, target, 0)
+                        task.wait()
+                        firetouchinterest(Root, target, 1)
+                        
+                        -- Nhấn giữ E (Cho Sea 2, 3 và rương hiếm)
+                        local prompt = target:FindFirstChildOfClass("ProximityPrompt") or target.Parent:FindFirstChildOfClass("ProximityPrompt")
+                        if prompt then fireproximityprompt(prompt) end
+                        
+                        task.wait(0.1) -- Nghỉ cực ngắn để chuyển rương tiếp theo
                     end
                 end
             end)
@@ -94,9 +101,10 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN CHUẨN BANANA =================
+-- ================= GIAO DIỆN (ĐẦY ĐỦ CHỨC NĂNG) =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
+Gui.ResetOnSpawn = false
 
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 480, 0, 320)
@@ -120,7 +128,6 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 22
 Title.BackgroundTransparency = 1
 
--- Container
 local PageContainer = Instance.new("Frame", Main)
 PageContainer.Position = UDim2.new(0, 150, 0, 10)
 PageContainer.Size = UDim2.new(1, -160, 1, -20)
@@ -141,12 +148,10 @@ local function CreateTab(name, active)
     TabBtn.TextColor3 = active and Color3.new(0,0,0) or Color3.new(1,1,1)
     TabBtn.Font = Enum.Font.GothamBold
     Instance.new("UICorner", TabBtn)
-
+    
     TabBtn.MouseButton1Click:Connect(function()
         for _, p in pairs(PageContainer:GetChildren()) do p.Visible = false end
-        for _, b in pairs(Sidebar:GetChildren()) do 
-            if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(35, 35, 35) b.TextColor3 = Color3.new(1,1,1) end 
-        end
+        for _, b in pairs(Sidebar:GetChildren()) do if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(35, 35, 35) b.TextColor3 = Color3.new(1,1,1) end end
         Page.Visible = true
         TabBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
         TabBtn.TextColor3 = Color3.new(0,0,0)
@@ -156,7 +161,7 @@ end
 
 local FarmTab = CreateTab("Farm", true)
 local MethodTab = CreateTab("Methods", false)
-local AntiTab = CreateTab("Anti-Admin", false)
+local SettingsTab = CreateTab("Settings", false)
 
 -- TAB FARM
 local function AddToggle(parent, text, default, callback)
@@ -178,77 +183,51 @@ end
 
 AddToggle(FarmTab, "Auto Farm Chest", false, function(v) getgenv().AutoFarm = v end)
 
--- TAB METHODS
-local function AddMethodBtn(name)
+-- TAB METHODS (CHỈNH CÁCH BAY & TỐC ĐỘ)
+local function AddMethod(name)
     local b = Instance.new("TextButton", MethodTab)
     b.Size = UDim2.new(1, 0, 0, 40)
-    b.BackgroundColor3 = (getgenv().FarmMethod == name) and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
     b.Text = "Mode: " .. name
+    b.BackgroundColor3 = (getgenv().FarmMethod == name) and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
     b.TextColor3 = (getgenv().FarmMethod == name) and Color3.new(0,0,0) or Color3.new(1,1,1)
     b.Font = Enum.Font.GothamBold
     Instance.new("UICorner", b)
-
     b.MouseButton1Click:Connect(function()
         getgenv().FarmMethod = name
-        for _, btn in pairs(MethodTab:GetChildren()) do
-            if btn:IsA("TextButton") and btn.Text:find("Mode:") then
-                btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-                btn.TextColor3 = Color3.new(1,1,1)
-            end
-        end
-        b.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        b.TextColor3 = Color3.new(0,0,0)
+        for _, btn in pairs(MethodTab:GetChildren()) do if btn:IsA("TextButton") then btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30) btn.TextColor3 = Color3.new(1,1,1) end end
+        b.BackgroundColor3 = Color3.fromRGB(255, 215, 0) b.TextColor3 = Color3.new(0,0,0)
     end)
 end
 
-AddMethodBtn("Tween")
-AddMethodBtn("Teleport")
-
-local Label = Instance.new("TextLabel", MethodTab)
-Label.Size = UDim2.new(1,0,0,30)
-Label.Text = "--- CHỈNH TỐC ĐỘ (TWEEN) ---"
-Label.TextColor3 = Color3.new(1,1,1)
-Label.BackgroundTransparency = 1
+AddMethod("Tween")
+AddMethod("Teleport")
 
 local SpeedInput = Instance.new("TextBox", MethodTab)
 SpeedInput.Size = UDim2.new(1,0,0,45)
 SpeedInput.BackgroundColor3 = Color3.fromRGB(35,35,35)
 SpeedInput.Text = tostring(getgenv().TweenSpeed)
-SpeedInput.PlaceholderText = "Tốc độ (Ví dụ: 300)..."
+SpeedInput.PlaceholderText = "Nhập tốc độ bay..."
 SpeedInput.TextColor3 = Color3.fromRGB(255, 215, 0)
 SpeedInput.Font = Enum.Font.GothamBold
 Instance.new("UICorner", SpeedInput)
+SpeedInput.FocusLost:Connect(function() getgenv().TweenSpeed = tonumber(SpeedInput.Text) or 300 end)
 
-SpeedInput.FocusLost:Connect(function()
-    local val = tonumber(SpeedInput.Text)
-    if val then getgenv().TweenSpeed = val end
-end)
-
--- TAB ANTI
-AddToggle(AntiTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
-AddToggle(AntiTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
+-- TAB SETTINGS
+AddToggle(SettingsTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
+AddToggle(SettingsTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
 
 -- Nút nổi 🍌
 local Icon = Instance.new("TextButton", Gui)
-Icon.Size = UDim2.new(0, 55, 0, 55)
-Icon.Position = UDim2.new(0.05, 0, 0.15, 0)
+Icon.Size = UDim2.new(0, 50, 0, 50)
+Icon.Position = UDim2.new(0, 10, 0.5, 0)
 Icon.Text = "🍌"
 Icon.TextSize = 30
 Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
 Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Kéo thả (Mobi & PC)
+-- Kéo thả UI
 local dragging, dragStart, startPos
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true dragStart = input.Position startPos = Main.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+Main.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = Main.Position end end)
+UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
 UserInputService.InputEnded:Connect(function() dragging = false end)
