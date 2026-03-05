@@ -1,7 +1,7 @@
 --[[
     👑 TÁC GIẢ: HẢI8A
-    🍌 BANANA HUB - SUPREME EDITION (FULL CONSOLIDATED)
-    🚀 STATUS: SECURITY LOCK ACTIVE (1 KEY - 1 ACC)
+    🍌 BANANA HUB - SUPREME TOTAL VERSION
+    🔐 CHẾ ĐỘ: 1 KEY - 1 ACCOUNT (UserId Lock)
 ]]
 
 local Players = game:GetService("Players")
@@ -11,11 +11,11 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= CẤU HÌNH BẢO MẬT =================
-local _K = "haidz" -- Key bảo mật của bạn
-local _A = Player.UserId -- Khóa theo tài khoản người chạy
+-- ================= HỆ THỐNG BẢO MẬT =================
+local _K = "haidz" -- Key vĩnh viễn
+local _A = Player.UserId -- Khóa tài khoản duy nhất
 
--- ================= HỆ THỐNG ĐĂNG NHẬP =================
+-- ================= GIAO DIỆN LOGIN =================
 if game.CoreGui:FindFirstChild("BananaLogin") then game.CoreGui.BananaLogin:Destroy() end
 local LoginGui = Instance.new("ScreenGui", game.CoreGui); LoginGui.Name = "BananaLogin"
 
@@ -25,7 +25,7 @@ L_Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", L
 Instance.new("UIStroke", L_Main).Color = Color3.fromRGB(255, 215, 0)
 
 local L_Title = Instance.new("TextLabel", L_Main)
-L_Title.Size = UDim2.new(1, 0, 0, 60); L_Title.Text = "BANANA HUB LOGIN"; L_Title.TextColor3 = Color3.fromRGB(255, 215, 0)
+L_Title.Size = UDim2.new(1, 0, 0, 60); L_Title.Text = "HẢI8A - BANANA HUB"; L_Title.TextColor3 = Color3.fromRGB(255, 215, 0)
 L_Title.Font = "GothamBold"; L_Title.TextSize = 22; L_Title.BackgroundTransparency = 1
 
 local L_Box = Instance.new("TextBox", L_Main)
@@ -38,91 +38,101 @@ L_Btn.Size = UDim2.new(0.8, 0, 0, 45); L_Btn.Position = UDim2.new(0.1, 0, 0.65, 
 L_Btn.Text = "XÁC THỰC"; L_Btn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); L_Btn.Font = "GothamBold"
 Instance.new("UICorner", L_Btn)
 
--- ================= HÀM CHÍNH (KHI ĐĂNG NHẬP THÀNH CÔNG) =================
+-- ================= HÀM CHẠY MENU CHÍNH =================
 function StartHub()
+    -- BIẾN CÀI ĐẶT
     getgenv().AutoFarm = false
+    getgenv().AntiAdmin = true
+    getgenv().AntiAFK = true
     getgenv().TweenSpeed = 300
-    
-    -- 🛡️ ANTI ADMIN
+
+    -- [1] ANTI ADMIN & AFK LOGIC
     Players.PlayerAdded:Connect(function(plr)
-        local admins = {"admin", "mod", "owner", "staff"}
-        for _, n in pairs(admins) do
-            if plr.Name:lower():find(n) or (plr:GetRankInGroup(game.CreatorId) > 100) then
-                Player:Kick("🛡️ Admin ("..plr.Name..") detected!")
-            end
+        if getgenv().AntiAdmin then
+            local admins = {"admin", "mod", "owner", "staff", "tester"}
+            for _, n in pairs(admins) do if plr.Name:lower():find(n) then Player:Kick("🛡️ Admin Detected: "..plr.Name) end end
         end
     end)
+    Player.Idled:Connect(function() if getgenv().AntiAFK then VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end end)
 
-    -- 🛡️ ANTI AFK
-    Player.Idled:Connect(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
-
-    -- 👻 AUTO NOCLIP
+    -- [2] AUTO NOCLIP (XUYÊN TƯỜNG)
     RunService.Stepped:Connect(function()
         if getgenv().AutoFarm and Player.Character then
-            for _, v in pairs(Player.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
+            for _, v in pairs(Player.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
         end
     end)
 
-    -- 🖥️ GIAO DIỆN MAIN HUB
+    -- [3] GIAO DIỆN CHÍNH
     if game.CoreGui:FindFirstChild("Hai8aHub") then game.CoreGui.Hai8aHub:Destroy() end
     local Gui = Instance.new("ScreenGui", game.CoreGui); Gui.Name = "Hai8aHub"
     
     local Main = Instance.new("Frame", Gui)
-    Main.Size = UDim2.new(0, 480, 0, 320); Main.Position = UDim2.new(0.5, -240, 0.5, -160)
+    Main.Size = UDim2.new(0, 500, 0, 350); Main.Position = UDim2.new(0.5, -250, 0.5, -175)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UICorner", Main)
     Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
-    -- 🍌 NÚT NỔI
+    -- 🍌 NÚT BẬT TẮT (TOGGLE)
     local TBtn = Instance.new("TextButton", Gui)
-    TBtn.Size = UDim2.new(0, 55, 0, 55); TBtn.Position = UDim2.new(0, 10, 0.5, 0)
-    TBtn.Text = "🍌"; TBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); TBtn.TextSize = 30
+    TBtn.Size = UDim2.new(0, 60, 0, 60); TBtn.Position = UDim2.new(0, 10, 0.5, 0); TBtn.Text = "🍌"; TBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); TBtn.TextSize = 35
     Instance.new("UICorner", TBtn).CornerRadius = UDim.new(1, 0)
     TBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
-    -- TAB SYSTEM
-    local Side = Instance.new("Frame", Main); Side.Size = UDim2.new(0, 130, 1, 0); Side.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", Side)
-    local Cont = Instance.new("Frame", Main); Cont.Position = UDim2.new(0, 140, 0, 10); Cont.Size = UDim2.new(1, -150, 1, -20); Cont.BackgroundTransparency = 1
+    -- TẠO SIDEBAR & TABS
+    local Sidebar = Instance.new("Frame", Main); Sidebar.Size = UDim2.new(0, 130, 1, 0); Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", Sidebar)
+    local Container = Instance.new("Frame", Main); Container.Position = UDim2.new(0, 140, 0, 10); Container.Size = UDim2.new(1, -150, 1, -20); Container.BackgroundTransparency = 1
 
     local function CreateTab(name, active)
-        local P = Instance.new("ScrollingFrame", Cont); P.Size = UDim2.new(1,0,1,0); P.Visible = active; P.BackgroundTransparency = 1; P.ScrollBarThickness = 0
-        Instance.new("UIListLayout", P).Padding = UDim.new(0, 8)
-        local B = Instance.new("TextButton", Side); B.Size = UDim2.new(0.9, 0, 0, 35); B.Text = name; B.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30,30,30); B.Font = "GothamBold"
+        local P = Instance.new("ScrollingFrame", Container); P.Size = UDim2.new(1,0,1,0); P.Visible = active; P.BackgroundTransparency = 1; P.ScrollBarThickness = 0
+        Instance.new("UIListLayout", P).Padding = UDim.new(0, 10)
+        local B = Instance.new("TextButton", Sidebar); B.Size = UDim2.new(0.9, 0, 0, 40); B.Text = name; B.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(40,40,40); B.Font = "GothamBold"
         Instance.new("UICorner", B)
         B.MouseButton1Click:Connect(function()
-            for _, v in pairs(Cont:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
-            for _, v in pairs(Side:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(30,30,30) end end
-            P.Visible = true; B.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            for _, v in pairs(Container:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
+            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(40,40,40); v.TextColor3 = Color3.new(1,1,1) end end
+            P.Visible = true; B.BackgroundColor3 = Color3.fromRGB(255, 215, 0); B.TextColor3 = Color3.new(0,0,0)
         end)
         return P
     end
 
     local FarmTab = CreateTab("Farm", true)
     local ServerTab = CreateTab("Server", false)
+    local AntiTab = CreateTab("Anti", false)
 
-    -- FARM CONTENT
-    local FTog = Instance.new("TextButton", FarmTab); FTog.Size = UDim2.new(1,0,0,45); FTog.Text = "AUTO FARM CHEST: OFF"; FTog.BackgroundColor3 = Color3.fromRGB(40,40,40); FTog.TextColor3 = Color3.new(1,1,1); FTog.Font = "GothamBold"; Instance.new("UICorner", FTog)
+    -- [TAB FARM CONTENT]
+    local FTog = Instance.new("TextButton", FarmTab); FTog.Size = UDim2.new(1, 0, 0, 50); FTog.Text = "AUTO FARM CHEST: OFF"; FTog.BackgroundColor3 = Color3.fromRGB(45,45,45); FTog.TextColor3 = Color3.new(1,1,1); FTog.Font = "GothamBold"; Instance.new("UICorner", FTog)
     FTog.MouseButton1Click:Connect(function()
         getgenv().AutoFarm = not getgenv().AutoFarm
         FTog.Text = "AUTO FARM CHEST: " .. (getgenv().AutoFarm and "ON" or "OFF")
-        FTog.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40)
+        FTog.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
     end)
 
-    -- SERVER CONTENT
+    -- [TAB SERVER CONTENT]
     local SLabel = Instance.new("TextLabel", ServerTab); SLabel.Size = UDim2.new(1,0,1,0); SLabel.BackgroundTransparency = 1; SLabel.TextColor3 = Color3.new(1,1,1); SLabel.TextXAlignment = "Left"; SLabel.TextYAlignment = "Top"; SLabel.Font = "Gotham"; SLabel.TextSize = 13
     task.spawn(function()
         while task.wait(3) do
-            local chests, fruit, bosses = 0, "Không có", {}
+            local chests, bosses = 0, {}
             for _, v in pairs(workspace:GetDescendants()) do if v.Name:lower():find("chest") then chests = chests + 1 end end
-            for _, n in pairs(workspace.Enemies:GetChildren()) do if n:FindFirstChild("Humanoid") and n.Humanoid.MaxHealth >= 50000 then table.insert(bosses, n.Name) end end
-            SLabel.Text = string.format("🏝️ Sea: %d\n👹 Boss: %s\n💰 Rương: %d\n🍎 Trái ác quỷ: Đang quét...", (game.PlaceId == 2753915549 and 1 or game.PlaceId == 4442245410 and 2 or 3), (#bosses > 0 and table.concat(bosses, ", ") or "Hết"), chests)
+            local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
+            for _, n in pairs(enemyFolder:GetChildren()) do if n:FindFirstChild("Humanoid") and n.Humanoid.Health > 0 and n.Humanoid.MaxHealth >= 50000 then table.insert(bosses, n.Name) end end
+            SLabel.Text = string.format("💰 Rương Server: %d\n👹 Boss hiện có:\n• %s\n\n🏝️ Sea: %s", chests, (#bosses > 0 and table.concat(bosses, ", ") or "Đã hết"), (game.PlaceId == 2753915549 and "1" or game.PlaceId == 4442245410 and "2" or "3"))
         end
     end)
 
-    -- FARM LOOP
+    -- [TAB ANTI CONTENT]
+    local function AddAnti(name, val)
+        local btn = Instance.new("TextButton", AntiTab); btn.Size = UDim2.new(1,0,0,45); btn.Text = name..": ON"; btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0); Instance.new("UICorner", btn)
+        btn.MouseButton1Click:Connect(function()
+            getgenv()[val] = not getgenv()[val]
+            btn.Text = name..": "..(getgenv()[val] and "ON" or "OFF")
+            btn.BackgroundColor3 = getgenv()[val] and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45,45,45)
+        end)
+    end
+    AddAnti("Anti-Admin", "AntiAdmin")
+    AddAnti("Anti-AFK", "AntiAFK")
+
+    -- [LOGIC FARM RƯƠNG CHÍNH]
     task.spawn(function()
-        while task.wait(0.5) do
+        while task.wait(0.1) do
             if getgenv().AutoFarm then
                 pcall(function()
                     for _, v in pairs(workspace:GetDescendants()) do
@@ -131,7 +141,7 @@ function StartHub()
                             local root = Player.Character.HumanoidRootPart
                             local dist = (root.Position - v.Position).Magnitude
                             TweenService:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = v.CFrame + Vector3.new(0,3,0)}):Play()
-                            task.wait(dist/getgenv().TweenSpeed + 0.1)
+                            task.wait(dist/getgenv().TweenSpeed + 0.15)
                             firetouchinterest(root, v, 0); firetouchinterest(root, v, 1)
                             for _, p in pairs(v:GetDescendants()) do if p:IsA("ProximityPrompt") then fireproximityprompt(p) end end
                         end
@@ -142,11 +152,11 @@ function StartHub()
     end)
 end
 
--- ================= XỬ LÝ LOGIN =================
+-- ================= LOGIN LOGIC =================
 L_Btn.MouseButton1Click:Connect(function()
     if L_Box.Text == _K and Player.UserId == _A then
         LoginGui:Destroy(); StartHub()
     else
-        L_Btn.Text = "SAI KEY HOẶC TÀI KHOẢN!"; task.wait(2); L_Btn.Text = "XÁC THỰC"
+        L_Btn.Text = "SAI KEY HOẶC SAI ACC!"; task.wait(1.5); L_Btn.Text = "XÁC THỰC"
     end
 end)
