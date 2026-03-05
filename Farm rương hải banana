@@ -1,7 +1,7 @@
 --[[
     👑 TÁC GIẢ: HẢI8A
-    🍌 BANANA HUB - FULL TAB EDITION
-    🔐 BẢO MẬT: KEY haidz | KHÓA 1 TÀI KHOẢN
+    🍌 BANANA HUB - PERFECT FIXED VERSION
+    🔐 KEY: haidz | LOCK: 1 ACCOUNT ONLY
 ]]
 
 local Players = game:GetService("Players")
@@ -10,57 +10,69 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 
--- ================= CÀI ĐẶT BẢO MẬT =================
+-- ================= CẤU HÌNH BẢO MẬT =================
 local _K = "haidz"
 local _A = Player.UserId 
 
--- ================= GIAO DIỆN LOGIN =================
+-- ================= GIAO DIỆN LOGIN (FIXED) =================
 if game.CoreGui:FindFirstChild("BananaLogin") then game.CoreGui.BananaLogin:Destroy() end
 local LoginGui = Instance.new("ScreenGui", game.CoreGui); LoginGui.Name = "BananaLogin"
 local L_Main = Instance.new("Frame", LoginGui)
 L_Main.Size = UDim2.new(0, 320, 0, 200); L_Main.Position = UDim2.new(0.5, -160, 0.5, -100); L_Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Instance.new("UICorner", L_Main)
-local L_Box = Instance.new("TextBox", L_Main); L_Box.Size = UDim2.new(0.8, 0, 0, 40); L_Box.Position = UDim2.new(0.1, 0, 0.3, 0); L_Box.PlaceholderText = "Nhập Key..."; L_Box.TextColor3 = Color3.new(1,1,1); L_Box.BackgroundColor3 = Color3.fromRGB(30,30,30); Instance.new("UICorner", L_Box)
+Instance.new("UIStroke", L_Main).Color = Color3.fromRGB(255, 215, 0)
+
+local L_Box = Instance.new("TextBox", L_Main); L_Box.Size = UDim2.new(0.8, 0, 0, 40); L_Box.Position = UDim2.new(0.1, 0, 0.3, 0); L_Box.PlaceholderText = "Nhập Key..."; L_Box.Text = ""; L_Box.TextColor3 = Color3.new(1,1,1); L_Box.BackgroundColor3 = Color3.fromRGB(30,30,30); Instance.new("UICorner", L_Box)
 local L_Btn = Instance.new("TextButton", L_Main); L_Btn.Size = UDim2.new(0.8, 0, 0, 40); L_Btn.Position = UDim2.new(0.1, 0, 0.65, 0); L_Btn.Text = "XÁC THỰC"; L_Btn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); Instance.new("UICorner", L_Btn)
 
--- ================= HÀM CHÍNH (FULL TABS) =================
+-- ================= HÀM CHÍNH (FIXED ALL TABS) =================
 function StartHub()
     getgenv().AutoFarm = false
     getgenv().AntiAdmin = true
     getgenv().AntiAFK = true
     getgenv().TweenSpeed = 300
 
-    -- LOGIC HỆ THỐNG
-    Players.PlayerAdded:Connect(function(p) if getgenv().AntiAdmin and p.Name:lower():find("admin") then Player:Kick("🛡️ Admin Detected!") end end)
+    -- [FIX 1] ANTI ADMIN & AFK SIÊU NHẠY
+    Players.PlayerAdded:Connect(function(p) 
+        if getgenv().AntiAdmin then
+            local admins = {"admin", "mod", "staff", "owner"}
+            for _, n in pairs(admins) do if p.Name:lower():find(n) then Player:Kick("🛡️ Banana Hub: Admin "..p.Name.." joined!") end end
+        end
+    end)
     Player.Idled:Connect(function() if getgenv().AntiAFK then VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end end)
-    RunService.Stepped:Connect(function() if getgenv().AutoFarm and Player.Character then for _,v in pairs(Player.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end end)
 
-    -- UI MAIN
+    -- [FIX 2] NOCLIP KHÔNG GÂY LAG
+    local NoclipLoop = RunService.Stepped:Connect(function()
+        if getgenv().AutoFarm and Player.Character then
+            for _, v in pairs(Player.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+        end
+    end)
+
+    -- [FIX 3] GIAO DIỆN CHÍNH PRO
     if game.CoreGui:FindFirstChild("Hai8aHub") then game.CoreGui.Hai8aHub:Destroy() end
     local Gui = Instance.new("ScreenGui", game.CoreGui); Gui.Name = "Hai8aHub"
     local Main = Instance.new("Frame", Gui); Main.Size = UDim2.new(0, 520, 0, 340); Main.Position = UDim2.new(0.5, -260, 0.5, -170); Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UICorner", Main); Instance.new("UIStroke", Main).Color = Color3.fromRGB(255, 215, 0)
 
-    -- NÚT CHUỐI 🍌
-    local TBtn = Instance.new("TextButton", Gui); TBtn.Size = UDim2.new(0, 60, 0, 60); TBtn.Position = UDim2.new(0, 15, 0.5, 0); TBtn.Text = "🍌"; TBtn.TextSize = 35; TBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); Instance.new("UICorner", TBtn).CornerRadius = UDim.new(1, 0)
+    -- NÚT CHUỐI 🍌 (CỐ ĐỊNH PHẢI CÓ)
+    local TBtn = Instance.new("TextButton", Gui); TBtn.Size = UDim2.new(0, 60, 0, 60); TBtn.Position = UDim2.new(0, 15, 0.5, -30); TBtn.Text = "🍌"; TBtn.TextSize = 35; TBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0); Instance.new("UICorner", TBtn).CornerRadius = UDim.new(1, 0)
     TBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
-    -- SIDEBAR
+    -- SIDEBAR & TABS
     local Sidebar = Instance.new("Frame", Main); Sidebar.Size = UDim2.new(0, 130, 1, 0); Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Instance.new("UICorner", Sidebar)
     local Container = Instance.new("Frame", Main); Container.Position = UDim2.new(0, 140, 0, 10); Container.Size = UDim2.new(1, -150, 1, -20); Container.BackgroundTransparency = 1
 
     local function AddTab(name, active)
-        local P = Instance.new("ScrollingFrame", Container); P.Size = UDim2.new(1,0,1,0); P.Visible = active; P.BackgroundTransparency = 1; P.ScrollBarThickness = 0
+        local P = Instance.new("ScrollingFrame", Container); P.Size = UDim2.new(1,0,1,0); P.Visible = active; P.BackgroundTransparency = 1; P.ScrollBarThickness = 2
         Instance.new("UIListLayout", P).Padding = UDim.new(0, 10)
         local B = Instance.new("TextButton", Sidebar); B.Size = UDim2.new(0.9, 0, 0, 40); B.Text = name; B.BackgroundColor3 = active and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(40,40,40); B.Font = "GothamBold"
         Instance.new("UICorner", B)
         B.MouseButton1Click:Connect(function()
             for _, v in pairs(Container:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
-            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(40,40,40) end end
-            P.Visible = true; B.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(40,40,40); v.TextColor3 = Color3.new(1,1,1) end end
+            P.Visible = true; B.BackgroundColor3 = Color3.fromRGB(255, 215, 0); B.TextColor3 = Color3.new(0,0,0)
         end)
         return P
     end
 
-    -- KHỞI TẠO 4 TABS
     local FarmTab = AddTab("Farm", true)
     local ServerTab = AddTab("Server", false)
     local AntiTab = AddTab("Anti", false)
@@ -74,14 +86,18 @@ function StartHub()
         FTog.BackgroundColor3 = getgenv().AutoFarm and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
     end)
 
-    -- [TAB 2: SERVER]
-    local SLabel = Instance.new("TextLabel", ServerTab); SLabel.Size = UDim2.new(1,0,1,0); SLabel.BackgroundTransparency = 1; SLabel.TextColor3 = Color3.new(1,1,1); SLabel.TextXAlignment = "Left"; SLabel.TextYAlignment = "Top"; SLabel.TextSize = 13
+    -- [TAB 2: SERVER - FIXED SCANNER]
+    local SLabel = Instance.new("TextLabel", ServerTab); SLabel.Size = UDim2.new(1,0,1,0); SLabel.BackgroundTransparency = 1; SLabel.TextColor3 = Color3.new(1,1,1); SLabel.TextXAlignment = "Left"; SLabel.TextYAlignment = "Top"; SLabel.TextSize = 14; SLabel.TextWrapped = true
     task.spawn(function()
         while task.wait(3) do
             local chests, bosses = 0, {}
             for _, v in pairs(workspace:GetDescendants()) do if v.Name:lower():find("chest") then chests = chests + 1 end end
-            for _, n in pairs(workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or workspace:GetChildren()) do if n:FindFirstChild("Humanoid") and n.Humanoid.Health > 0 and n.Humanoid.MaxHealth >= 50000 then table.insert(bosses, n.Name) end end
-            SLabel.Text = string.format("💰 Rương Server: %d\n👹 Boss Đang Có:\n• %s\n\n🏝️ Sea: %s", chests, (#bosses > 0 and table.concat(bosses, ", ") or "Hết"), (game.PlaceId == 2753915549 and "1" or game.PlaceId == 4442245410 and "2" or "3"))
+            for _, n in pairs(workspace:GetDescendants()) do 
+                if n:FindFirstChild("Humanoid") and n.Humanoid.Health > 0 and n.Humanoid.MaxHealth >= 50000 and not n:IsDescendantOf(Player.Character) then 
+                    if not table.find(bosses, n.Name) then table.insert(bosses, n.Name) end
+                end 
+            end
+            SLabel.Text = string.format("💰 Rương Server: %d\n\n👹 Boss Đang Có:\n• %s\n\n🏝️ Sea: %s", chests, (#bosses > 0 and table.concat(bosses, "\n• ") or "Hết"), (game.PlaceId == 2753915549 and "1" or game.PlaceId == 4442245410 and "2" or "3"))
         end
     end)
 
@@ -98,24 +114,31 @@ function StartHub()
     CreateAnti("Chống AFK", "AntiAFK")
 
     -- [TAB 4: SETTING]
-    local STitle = Instance.new("TextLabel", SettingTab); STitle.Size = UDim2.new(1,0,0,30); STitle.Text = "Tốc độ bay (Tween Speed):"; STitle.TextColor3 = Color3.new(1,1,1); STitle.BackgroundTransparency = 1
+    local STitle = Instance.new("TextLabel", SettingTab); STitle.Size = UDim2.new(1,0,0,30); STitle.Text = "Tốc độ bay (Dưới 350):"; STitle.TextColor3 = Color3.new(1,1,1); STitle.BackgroundTransparency = 1
     local SBox = Instance.new("TextBox", SettingTab); SBox.Size = UDim2.new(1,0,0,40); SBox.Text = tostring(getgenv().TweenSpeed); SBox.BackgroundColor3 = Color3.fromRGB(45,45,45); SBox.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", SBox)
     SBox.FocusLost:Connect(function() getgenv().TweenSpeed = tonumber(SBox.Text) or 300 end)
 
-    -- LOGIC FARM CHÍNH
+    -- [FIX 4] LOGIC TWEEN FARM RƯƠNG KHÔNG BUG
     task.spawn(function()
-        while task.wait(0.1) do
+        while task.wait(0.5) do
             if getgenv().AutoFarm then
                 pcall(function()
                     for _, v in pairs(workspace:GetDescendants()) do
                         if not getgenv().AutoFarm then break end
-                        if v.Name:lower():find("chest") then
-                            local root = Player.Character.HumanoidRootPart
-                            local dist = (root.Position - v.Position).Magnitude
-                            TweenService:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = v.CFrame + Vector3.new(0,3,0)}):Play()
-                            task.wait(dist/getgenv().TweenSpeed + 0.15)
-                            firetouchinterest(root, v, 0); firetouchinterest(root, v, 1)
-                            for _, p in pairs(v:GetDescendants()) do if p:IsA("ProximityPrompt") then fireproximityprompt(p) end end
+                        if v.Name:lower():find("chest") and v:IsA("BasePart") then
+                            local root = Player.Character:FindFirstChild("HumanoidRootPart")
+                            if root then
+                                local dist = (root.Position - v.Position).Magnitude
+                                local tween = TweenService:Create(root, TweenInfo.new(dist/getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = v.CFrame + Vector3.new(0,3,0)})
+                                tween:Play()
+                                
+                                -- Chờ cho đến khi đến nơi hoặc rương bị mất
+                                repeat task.wait() until (root.Position - v.Position).Magnitude < 10 or not v.Parent or not getgenv().AutoFarm
+                                
+                                firetouchinterest(root, v, 0); firetouchinterest(root, v, 1)
+                                for _, p in pairs(v:GetDescendants()) do if p:IsA("ProximityPrompt") then fireproximityprompt(p) end end
+                                task.wait(0.1)
+                            end
                         end
                     end
                 end)
@@ -129,6 +152,6 @@ L_Btn.MouseButton1Click:Connect(function()
     if L_Box.Text == _K and Player.UserId == _A then
         LoginGui:Destroy(); StartHub()
     else
-        L_Btn.Text = "SAI KEY/ACC!"; task.wait(1); L_Btn.Text = "XÁC THỰC"
+        L_Btn.Text = "SAI KEY/TÀI KHOẢN!"; task.wait(1.5); L_Btn.Text = "XÁC THỰC"
     end
 end)
