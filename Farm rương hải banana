@@ -11,6 +11,48 @@ local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
+local StarterGui = game:GetService("StarterGui")
+
+-- ================= HỆ THỐNG THÔNG BÁO CHỮ VÀNG =================
+local function ShowWelcomeMessage()
+    local WelcomeGui = Instance.new("ScreenGui", game.CoreGui)
+    WelcomeGui.Name = "BananaWelcome"
+    
+    local Holder = Instance.new("Frame", WelcomeGui)
+    Holder.Size = UDim2.new(0, 400, 0, 150)
+    Holder.Position = UDim2.new(0.5, -200, 0.2, 0)
+    Holder.BackgroundTransparency = 1
+    
+    local function CreateText(txt, pos, delay_time)
+        local label = Instance.new("TextLabel", Holder)
+        label.Size = UDim2.new(1, 0, 0, 40)
+        label.Position = pos
+        label.Text = txt
+        label.TextColor3 = Color3.fromRGB(255, 215, 0) -- Màu vàng
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 25
+        label.BackgroundTransparency = 1
+        label.TextTransparency = 1
+        label.TextStrokeTransparency = 0.5
+        
+        -- Hiệu ứng hiện chữ
+        TweenService:Create(label, TweenInfo.new(1), {TextTransparency = 0}):Play()
+        task.wait(delay_time)
+    end
+
+    task.spawn(function()
+        CreateText("CHÀO BẠN!", UDim2.new(0, 0, 0, 0), 0.8)
+        CreateText("ĐÂY LÀ SCRIPT FARM RƯƠNG CỦA HẢI8A", UDim2.new(0, 0, 0, 45), 0.8)
+        CreateText("CHÚC BẠN CÓ ĐƯỢC NHIỀU TIỀN!", UDim2.new(0, 0, 0, 90), 2.5)
+        
+        -- Biến mất
+        for _, v in pairs(Holder:GetChildren()) do
+            TweenService:Create(v, TweenInfo.new(1), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+        end
+        task.wait(1)
+        WelcomeGui:Destroy()
+    end)
+end
 
 -- ================= HỆ THỐNG KEY & LƯU KEY =================
 local KEY_FILE = "BananaHub_Config.json"
@@ -31,6 +73,7 @@ local function CheckSavedKey()
     return false
 end
 
+-- Khởi tạo Key System hoặc chạy luôn nếu đã có key
 if not CheckSavedKey() then
     local KeyGui = Instance.new("ScreenGui", game.CoreGui)
     KeyGui.Name = "BananaKeySys"
@@ -69,12 +112,15 @@ if not CheckSavedKey() then
         if KeyInput.Text == VALID_KEY then
             SaveKey(KeyInput.Text)
             KeyGui:Destroy()
+            ShowWelcomeMessage() -- Hiện thông báo chào mừng sau khi nhập key
         else
             KeyInput.Text = ""
             KeyInput.PlaceholderText = "SAI KEY! VUI LÒNG THỬ LẠI"
         end
     end)
     repeat task.wait() until not game.CoreGui:FindFirstChild("BananaKeySys")
+else
+    ShowWelcomeMessage() -- Đã có key sẵn thì hiện luôn thông báo
 end
 
 -- ================= KIỂM TRA GUI CŨ =================
@@ -97,7 +143,7 @@ Player.Idled:Connect(function()
     end
 end)
 
--- ================= HÀM DI CHUYỂN (ĐÃ FIX CHARACTER) =================
+-- ================= HÀM DI CHUYỂN (NOCLIP & FIX CHARACTER) =================
 local function SafeMove(targetCFrame)
     local char = Player.Character or Player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart", 5)
@@ -150,7 +196,6 @@ task.spawn(function()
                     if target and target.Parent then
                         SafeMove(target.CFrame + Vector3.new(0, 2, 0))
                         
-                        -- Lấy lại Root mới nhất sau khi SafeMove
                         local currentRoot = char:FindFirstChild("HumanoidRootPart")
                         if currentRoot then
                             firetouchinterest(currentRoot, target, 0)
@@ -168,10 +213,10 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN =================
+-- ================= GIAO DIỆN CHÍNH =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
-Gui.ResetOnSpawn = false -- Quan trọng: Không mất UI khi chết
+Gui.ResetOnSpawn = false 
 
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 480, 0, 320)
@@ -231,7 +276,7 @@ local FarmTab = CreateTab("Farm", true)
 local MethodTab = CreateTab("Methods", false)
 local SettingsTab = CreateTab("Settings", false)
 
--- PHẦN XEM SỐ LƯỢNG RƯƠNG
+-- QUÉT RƯƠNG HIỂN THỊ
 local ChestCountLabel = Instance.new("TextLabel", FarmTab)
 ChestCountLabel.Size = UDim2.new(1, 0, 0, 30)
 ChestCountLabel.BackgroundTransparency = 1
@@ -245,15 +290,14 @@ task.spawn(function()
         local count = 0
         for _, v in pairs(game.Workspace:GetDescendants()) do
             if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
-                if v.Parent and v.Parent.Name ~= "Opened" then
-                    count = count + 1
-                end
+                if v.Parent and v.Parent.Name ~= "Opened" then count = count + 1 end
             end
         end
         ChestCountLabel.Text = "Rương hiện có: " .. tostring(count)
     end
 end)
 
+-- COMPONENT HỖ TRỢ
 local function AddToggle(parent, text, default, callback)
     local b = Instance.new("TextButton", parent)
     b.Size = UDim2.new(1, 0, 0, 45)
@@ -304,6 +348,7 @@ SpeedInput.FocusLost:Connect(function() getgenv().TweenSpeed = tonumber(SpeedInp
 AddToggle(SettingsTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
 AddToggle(SettingsTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
 
+-- ICON MỞ MENU
 local Icon = Instance.new("TextButton", Gui)
 Icon.Size = UDim2.new(0, 50, 0, 50)
 Icon.Position = UDim2.new(0, 10, 0.5, 0)
@@ -313,7 +358,7 @@ Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
 Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Kéo thả UI (Đã fix lỗi kéo thả sau khi Reset)
+-- KÉO THẢ UI
 local dragging, dragStart, startPos
 Main.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = Main.Position end end)
 UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
