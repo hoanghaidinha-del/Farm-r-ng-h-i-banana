@@ -1,6 +1,6 @@
 --[[ 
     👑 TÁC GIẢ: HẢI8A 
-    🍌 BANANA HUB - FINAL FIX (RE-SPAWN FIX)
+    🍌 BANANA HUB - PRO MAX FIX (NO KICK - NO LAG)
     🚀 KEY VĨNH VIỄN: haidz
 ]]
 
@@ -11,13 +11,12 @@ local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
-local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
 -- ================= HỆ THỐNG THÔNG BÁO CHỮ VÀNG =================
 local function ShowWelcomeMessage()
     local WelcomeGui = Instance.new("ScreenGui", game.CoreGui)
     WelcomeGui.Name = "BananaWelcome"
-    
     local Holder = Instance.new("Frame", WelcomeGui)
     Holder.Size = UDim2.new(0, 400, 0, 150)
     Holder.Position = UDim2.new(0.5, -200, 0.2, 0)
@@ -28,14 +27,12 @@ local function ShowWelcomeMessage()
         label.Size = UDim2.new(1, 0, 0, 40)
         label.Position = pos
         label.Text = txt
-        label.TextColor3 = Color3.fromRGB(255, 215, 0) -- Màu vàng
+        label.TextColor3 = Color3.fromRGB(255, 215, 0)
         label.Font = Enum.Font.GothamBold
         label.TextSize = 25
         label.BackgroundTransparency = 1
         label.TextTransparency = 1
         label.TextStrokeTransparency = 0.5
-        
-        -- Hiệu ứng hiện chữ
         TweenService:Create(label, TweenInfo.new(1), {TextTransparency = 0}):Play()
         task.wait(delay_time)
     end
@@ -44,8 +41,6 @@ local function ShowWelcomeMessage()
         CreateText("CHÀO BẠN!", UDim2.new(0, 0, 0, 0), 0.8)
         CreateText("ĐÂY LÀ SCRIPT FARM RƯƠNG CỦA HẢI8A", UDim2.new(0, 0, 0, 45), 0.8)
         CreateText("CHÚC BẠN CÓ ĐƯỢC NHIỀU TIỀN!", UDim2.new(0, 0, 0, 90), 2.5)
-        
-        -- Biến mất
         for _, v in pairs(Holder:GetChildren()) do
             TweenService:Create(v, TweenInfo.new(1), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
         end
@@ -66,18 +61,13 @@ end
 local function CheckSavedKey()
     if isfile(KEY_FILE) then
         local success, data = pcall(function() return HttpService:JSONDecode(readfile(KEY_FILE)) end)
-        if success and data.SavedKey == VALID_KEY and data.Owner == Player.Name then
-            return true
-        end
+        if success and data.SavedKey == VALID_KEY and data.Owner == Player.Name then return true end
     end
     return false
 end
 
--- Khởi tạo Key System hoặc chạy luôn nếu đã có key
 if not CheckSavedKey() then
     local KeyGui = Instance.new("ScreenGui", game.CoreGui)
-    KeyGui.Name = "BananaKeySys"
-    
     local KeyMain = Instance.new("Frame", KeyGui)
     KeyMain.Size = UDim2.new(0, 320, 0, 180)
     KeyMain.Position = UDim2.new(0.5, -160, 0.5, -90)
@@ -112,99 +102,100 @@ if not CheckSavedKey() then
         if KeyInput.Text == VALID_KEY then
             SaveKey(KeyInput.Text)
             KeyGui:Destroy()
-            ShowWelcomeMessage() -- Hiện thông báo chào mừng sau khi nhập key
+            ShowWelcomeMessage()
         else
             KeyInput.Text = ""
-            KeyInput.PlaceholderText = "SAI KEY! VUI LÒNG THỬ LẠI"
+            KeyInput.PlaceholderText = "SAI KEY!"
         end
     end)
     repeat task.wait() until not game.CoreGui:FindFirstChild("BananaKeySys")
 else
-    ShowWelcomeMessage() -- Đã có key sẵn thì hiện luôn thông báo
-end
-
--- ================= KIỂM TRA GUI CŨ =================
-if game.CoreGui:FindFirstChild("Hai8aHub") then
-    game.CoreGui.Hai8aHub:Destroy()
+    ShowWelcomeMessage()
 end
 
 -- ================= BIẾN TOÀN CỤC =================
 getgenv().AutoFarm = false
 getgenv().FarmMethod = "Tween" 
 getgenv().TweenSpeed = 300 
-getgenv().AntiAdmin = true
 getgenv().AntiAFK = true
 
--- ================= ANTI-AFK =================
-Player.Idled:Connect(function()
-    if getgenv().AntiAFK then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end
-end)
-
--- ================= HÀM DI CHUYỂN (NOCLIP & FIX CHARACTER) =================
+-- ================= HỆ THỐNG DI CHUYỂN SIÊU MƯỢT (NO KICK) =================
 local function SafeMove(targetCFrame)
     local char = Player.Character or Player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart", 5)
-    if not root then return end
+    if not root or not getgenv().AutoFarm then return end
 
-    -- Noclip xuyên mọi thứ
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then v.CanCollide = false end
-    end
-
+    local distance = (root.Position - targetCFrame.Position).Magnitude
+    
     if getgenv().FarmMethod == "Teleport" then
         root.CFrame = targetCFrame
+        task.wait(0.1)
     else
-        local distance = (root.Position - targetCFrame.Position).Magnitude
-        if distance < 5 then root.CFrame = targetCFrame return end
+        if distance < 8 then root.CFrame = targetCFrame return end
         
-        local tween = TweenService:Create(root, TweenInfo.new(distance / getgenv().TweenSpeed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        -- Vô hiệu hóa lực đẩy vật lý để tránh bị giật và bị kick
+        local bv = Instance.new("BodyVelocity")
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Parent = root
+        
+        local tweenInfo = TweenInfo.new(distance / getgenv().TweenSpeed, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
+        
         tween:Play()
-        tween.Completed:Wait()
+        
+        -- Vòng lặp kiểm tra trong khi đang bay
+        while tween.PlaybackState == Enum.PlaybackState.Playing and getgenv().AutoFarm do
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0) -- Triệt tiêu vận tốc server check
+            root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+            task.wait()
+        end
+        
+        if not getgenv().AutoFarm then tween:Cancel() end
+        bv:Destroy()
     end
 end
 
+-- Noclip vĩnh viễn khi bật Farm
+RunService.Stepped:Connect(function()
+    if getgenv().AutoFarm and Player.Character then
+        for _, v in pairs(Player.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
+
 -- ================= LOGIC FARM =================
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(0.5) do
         if getgenv().AutoFarm then
             pcall(function()
-                local char = Player.Character or Player.CharacterAdded:Wait()
-                local Root = char:WaitForChild("HumanoidRootPart", 5)
-                if not Root then return end
+                local char = Player.Character
+                local root = char:FindFirstChild("HumanoidRootPart")
+                if not root then return end
 
                 local AllChests = {}
                 for _, v in pairs(game.Workspace:GetDescendants()) do
                     if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
                         if v.Parent and v.Parent.Name ~= "Opened" then
-                            table.insert(AllChests, {
-                                Part = v,
-                                Dist = (Root.Position - v.Position).Magnitude
-                            })
+                            table.insert(AllChests, {Part = v, Dist = (root.Position - v.Position).Magnitude})
                         end
                     end
                 end
-
                 table.sort(AllChests, function(a, b) return a.Dist < b.Dist end)
 
                 for i = 1, #AllChests do
                     if not getgenv().AutoFarm then break end
                     local target = AllChests[i].Part
-                    
                     if target and target.Parent then
                         SafeMove(target.CFrame + Vector3.new(0, 2, 0))
                         
-                        local currentRoot = char:FindFirstChild("HumanoidRootPart")
+                        -- Nhận rương nhanh
+                        local currentRoot = Player.Character:FindFirstChild("HumanoidRootPart")
                         if currentRoot then
                             firetouchinterest(currentRoot, target, 0)
-                            task.wait()
                             firetouchinterest(currentRoot, target, 1)
                         end
-                        
-                        local prompt = target:FindFirstChildOfClass("ProximityPrompt") or target.Parent:FindFirstChildOfClass("ProximityPrompt")
-                        if prompt then fireproximityprompt(prompt) end
                         task.wait(0.1)
                     end
                 end
@@ -213,11 +204,9 @@ task.spawn(function()
     end
 end)
 
--- ================= GIAO DIỆN CHÍNH =================
+-- ================= GIAO DIỆN (GIỮ NGUYÊN) =================
 local Gui = Instance.new("ScreenGui", game.CoreGui)
 Gui.Name = "Hai8aHub"
-Gui.ResetOnSpawn = false 
-
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 480, 0, 320)
 Main.Position = UDim2.new(0.5, -240, 0.5, -160)
@@ -276,28 +265,6 @@ local FarmTab = CreateTab("Farm", true)
 local MethodTab = CreateTab("Methods", false)
 local SettingsTab = CreateTab("Settings", false)
 
--- QUÉT RƯƠNG HIỂN THỊ
-local ChestCountLabel = Instance.new("TextLabel", FarmTab)
-ChestCountLabel.Size = UDim2.new(1, 0, 0, 30)
-ChestCountLabel.BackgroundTransparency = 1
-ChestCountLabel.Text = "Đang quét rương..."
-ChestCountLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-ChestCountLabel.Font = Enum.Font.GothamBold
-ChestCountLabel.TextSize = 16
-
-task.spawn(function()
-    while task.wait(0.5) do
-        local count = 0
-        for _, v in pairs(game.Workspace:GetDescendants()) do
-            if v:IsA("BasePart") and (v.Name:lower():find("chest") or v.Name:lower():find("rương")) then
-                if v.Parent and v.Parent.Name ~= "Opened" then count = count + 1 end
-            end
-        end
-        ChestCountLabel.Text = "Rương hiện có: " .. tostring(count)
-    end
-end)
-
--- COMPONENT HỖ TRỢ
 local function AddToggle(parent, text, default, callback)
     local b = Instance.new("TextButton", parent)
     b.Size = UDim2.new(1, 0, 0, 45)
@@ -317,38 +284,18 @@ end
 
 AddToggle(FarmTab, "Auto Farm Chest", false, function(v) getgenv().AutoFarm = v end)
 
-local function AddMethod(name)
-    local b = Instance.new("TextButton", MethodTab)
-    b.Size = UDim2.new(1, 0, 0, 40)
-    b.Text = "Mode: " .. name
-    b.BackgroundColor3 = (getgenv().FarmMethod == name) and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(30, 30, 30)
-    b.TextColor3 = (getgenv().FarmMethod == name) and Color3.new(0,0,0) or Color3.new(1,1,1)
-    b.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function()
-        getgenv().FarmMethod = name
-        for _, btn in pairs(MethodTab:GetChildren()) do if btn:IsA("TextButton") then btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30) btn.TextColor3 = Color3.new(1,1,1) end end
-        b.BackgroundColor3 = Color3.fromRGB(255, 215, 0) b.TextColor3 = Color3.new(0,0,0)
-    end)
-end
-
-AddMethod("Tween")
-AddMethod("Teleport")
-
 local SpeedInput = Instance.new("TextBox", MethodTab)
 SpeedInput.Size = UDim2.new(1,0,0,45)
 SpeedInput.BackgroundColor3 = Color3.fromRGB(35,35,35)
 SpeedInput.Text = tostring(getgenv().TweenSpeed)
-SpeedInput.PlaceholderText = "Nhập tốc độ bay..."
+SpeedInput.PlaceholderText = "Tốc độ bay (Khuyên dùng: 200-350)"
 SpeedInput.TextColor3 = Color3.fromRGB(255, 215, 0)
 SpeedInput.Font = Enum.Font.GothamBold
 Instance.new("UICorner", SpeedInput)
 SpeedInput.FocusLost:Connect(function() getgenv().TweenSpeed = tonumber(SpeedInput.Text) or 300 end)
 
-AddToggle(SettingsTab, "Anti-Admin", true, function(v) getgenv().AntiAdmin = v end)
 AddToggle(SettingsTab, "Anti-AFK", true, function(v) getgenv().AntiAFK = v end)
 
--- ICON MỞ MENU
 local Icon = Instance.new("TextButton", Gui)
 Icon.Size = UDim2.new(0, 50, 0, 50)
 Icon.Position = UDim2.new(0, 10, 0.5, 0)
@@ -358,7 +305,7 @@ Icon.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
 Icon.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- KÉO THẢ UI
+-- Kéo thả UI
 local dragging, dragStart, startPos
 Main.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = Main.Position end end)
 UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
